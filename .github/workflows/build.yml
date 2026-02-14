@@ -1,15 +1,16 @@
-name: Build SCS GUI Wrapper
+name: Build SCS Extractor GUI
 
 on:
   push:
     branches: [ "main" ]
+  workflow_dispatch: # Jate apni manually run korte paren
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout Code
+    - name: Checkout Repository
       uses: actions/checkout@v4
 
     - name: Setup .NET
@@ -17,22 +18,28 @@ jobs:
       with:
         dotnet-version: '9.0.x'
 
-    - name: Build GUI App
-      # Eita sudhu GUI executable toiri korbe
-      run: dotnet publish ScsGui.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true -o ./FinalBuild
+    - name: Restore Dependencies
+      run: dotnet restore ScsGui.csproj
 
-    - name: Add Original Extractor
-      # Eita apnar upload kora extractor.exe ke GUI er sathe ek folder e anbe
+    - name: Build GUI (Single File EXE)
+      # Eita ScsGui.exe toiri korbe kintu extractor.exe charai
       run: |
+        dotnet publish ScsGui.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true -o ./FinalRelease
+
+    - name: Combine GUI and Extractor
+      shell: pwsh
+      run: |
+        # Check korche extractor.exe repository-te ache kina
         if (Test-Path "extractor.exe") {
-            copy "extractor.exe" "./FinalBuild/"
+            Write-Host "Found extractor.exe, copying to release folder..."
+            Copy-Item "extractor.exe" -Destination "./FinalRelease/"
         } else {
-            Write-Error "extractor.exe root folder-e pawa jayni!"
+            Write-Error "Error: extractor.exe root folder-e pawa jayni! Doya kore file-ti upload korun."
             exit 1
         }
 
-    - name: Upload Zip
+    - name: Upload Finished Package
       uses: actions/upload-artifact@v4
       with:
-        name: SCS-Extractor-With-GUI
-        path: ./FinalBuild/
+        name: SCS-Extractor-Package
+        path: ./FinalRelease/
