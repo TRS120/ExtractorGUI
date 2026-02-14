@@ -16,6 +16,11 @@ jobs:
       with:
         python-version: '3.10'
 
+    - name: Debug - List Files
+      run: |
+        echo "Listing all files in the repository to debug names:"
+        dir /s
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -34,7 +39,7 @@ jobs:
 
         if (-not $scriptPath) {
             echo "Specific name not found, searching for any Python script..."
-            $scriptPath = Get-ChildItem -Filter "*.py" -Recurse | Where-Object { $_.Name -notlike "build.py" -and $_.FullName -notlike "*venv*" } | Select-Object -First 1 -ExpandProperty FullName
+            $scriptPath = Get-ChildItem -Include "*.py","*.PY" -Recurse | Where-Object { $_.Name -notlike "build.py" -and $_.FullName -notlike "*venv*" } | Select-Object -First 1 -ExpandProperty FullName
         }
 
         if ($scriptPath) {
@@ -42,6 +47,7 @@ jobs:
             pyinstaller --onefile --noconsole --clean $scriptPath
         } else {
             echo "ERROR: No Python script (.py) found in the entire repository."
+            echo "Please check the 'Debug - List Files' step above to see how your files are named."
             exit 1
         }
 
