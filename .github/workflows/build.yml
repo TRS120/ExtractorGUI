@@ -1,7 +1,7 @@
 name: Build EXE
 
 on:
-  workflow_dispatch: # এটি আপনাকে ম্যানুয়ালি বিল্ড শুরু করার বাটন দেবে
+  workflow_dispatch: # ম্যানুয়ালি বিল্ড শুরু করার বাটন দেবে
 
 jobs:
   build:
@@ -9,25 +9,44 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
+        cache: 'pip' # বারবার বিল্ড করলে সময় বাঁচাবে
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install pyinstaller
-        # আপনার স্ক্রিপ্টে যদি বাড়তি কোনো লাইব্রেরি লাগে তবে এখানে লিখুন (যেমন: pip install requests)
+        # যদি আপনার রিপোজিটরিতে requirements.txt থাকে, তবে এটি সব লাইব্রেরি অটো ইন্সটল করবে
+        if (Test-Path requirements.txt) {
+            pip install -r requirements.txt
+        }
+        # আপনার যদি নির্দিষ্ট কোনো লাইব্রেরি লাগে (যেমন customtkinter), নিচের লাইনে সেটি লিখুন:
+        # pip install customtkinter pillow requests
 
     - name: Build with PyInstaller
       run: |
-        pyinstaller --onefile --noconsole ExtractorGUI.py
+        # --onefile: একটি মাত্র ফাইল বানাবে
+        # --noconsole: GUI এর পেছনে কালো উইন্ডো আসবে না
+        # --clean: পুরনো ক্যাশ ডিলিট করে ফ্রেশ বিল্ড করবে
+        pyinstaller --onefile --noconsole --clean ExtractorGUI.py
 
-    - name: Upload EXE
-      uses: actions/upload-artifact@v3
+    - name: Verify Build
+      run: |
+        if (Test-Path dist/ExtractorGUI.exe) {
+            echo "Build successful: ExtractorGUI.exe exists."
+        } else {
+            echo "Build failed: ExtractorGUI.exe not found."
+            exit 1
+        }
+
+    - name: Upload EXE Artifact
+      uses: actions/upload-artifact@v4
       with:
-        name: ExtractorGUI-Build
+        name: ExtractorGUI-Windows-Build
         path: dist/ExtractorGUI.exe
+        retention-days: 7 # ৭ দিন পর ফাইলটি অটো ডিলিট হবে
