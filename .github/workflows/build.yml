@@ -1,9 +1,7 @@
-name: Build SCS Extractor GUI
+name: Build SCS GUI Wrapper
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
     branches: [ "main" ]
 
 jobs:
@@ -11,32 +9,30 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout Repository
+    - name: Checkout Code
       uses: actions/checkout@v4
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 9.0.x 
+        dotnet-version: '9.0.x'
 
-    - name: Restore dependencies
-      run: dotnet restore
+    - name: Build GUI App
+      # Eita sudhu GUI executable toiri korbe
+      run: dotnet publish ScsGui.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true -o ./FinalBuild
 
-    - name: Build and Publish GUI
-      run: |
-        dotnet publish -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true -o ./publish
-
-    - name: Bundle Extractor
+    - name: Add Original Extractor
+      # Eita apnar upload kora extractor.exe ke GUI er sathe ek folder e anbe
       run: |
         if (Test-Path "extractor.exe") {
-          copy "extractor.exe" "./publish/"
+            copy "extractor.exe" "./FinalBuild/"
         } else {
-          Write-Error "extractor.exe not found in root! Please ensure it is in the repo."
-          exit 1
+            Write-Error "extractor.exe root folder-e pawa jayni!"
+            exit 1
         }
 
-    - name: Upload Build Artifact
+    - name: Upload Zip
       uses: actions/upload-artifact@v4
       with:
-        name: SCS-Extractor-GUI-Win64
-        path: ./publish/
+        name: SCS-Extractor-With-GUI
+        path: ./FinalBuild/
