@@ -1,9 +1,8 @@
-name: Build SCS Extractor GUI
+name: Build SCS GUI Only
 
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch: # Jate apni manually run korte paren
 
 jobs:
   build:
@@ -18,28 +17,11 @@ jobs:
       with:
         dotnet-version: '9.0.x'
 
-    - name: Restore Dependencies
-      run: dotnet restore ScsGui.csproj
+    - name: Build GUI App
+      run: dotnet publish ScsGui.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true -o ./GUI_Output
 
-    - name: Build GUI (Single File EXE)
-      # Eita ScsGui.exe toiri korbe kintu extractor.exe charai
-      run: |
-        dotnet publish ScsGui.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true -o ./FinalRelease
-
-    - name: Combine GUI and Extractor
-      shell: pwsh
-      run: |
-        # Check korche extractor.exe repository-te ache kina
-        if (Test-Path "extractor.exe") {
-            Write-Host "Found extractor.exe, copying to release folder..."
-            Copy-Item "extractor.exe" -Destination "./FinalRelease/"
-        } else {
-            Write-Error "Error: extractor.exe root folder-e pawa jayni! Doya kore file-ti upload korun."
-            exit 1
-        }
-
-    - name: Upload Finished Package
+    - name: Upload GUI Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: SCS-Extractor-Package
-        path: ./FinalRelease/
+        name: ScsGui-Standalone
+        path: ./GUI_Output/
