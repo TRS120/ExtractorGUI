@@ -1,7 +1,7 @@
 name: Build EXE
 
 on:
-  workflow_dispatch: # ম্যানুয়ালি বিল্ড শুরু করার বাটন দেবে
+  workflow_dispatch: 
 
 jobs:
   build:
@@ -23,31 +23,32 @@ jobs:
         if (Test-Path requirements.txt) {
             pip install -r requirements.txt
         }
-        # আপনার প্রয়োজন হলে এখানে বাড়তি লাইব্রেরি যোগ করুন:
-        # pip install customtkinter requests pillow
 
     - name: Locate Script and Build
       run: |
-        # ফাইলটি যদি সরাসরি মেইন ফোল্ডারে না থাকে, তবে এটি সব ফোল্ডার সার্চ করবে
         $scriptPath = Get-ChildItem -Filter "ExtractorGUI.py" -Recurse | Select-Object -First 1 -ExpandProperty FullName
         
         if (-not $scriptPath) {
-            # যদি বড় হাতের নামে না পাওয়া যায়, তবে ছোট হাতের নামে চেক করবে
             $scriptPath = Get-ChildItem -Filter "extractorgui.py" -Recurse | Select-Object -First 1 -ExpandProperty FullName
         }
 
+        if (-not $scriptPath) {
+            echo "Specific name not found, searching for any Python script..."
+            $scriptPath = Get-ChildItem -Filter "*.py" -Recurse | Where-Object { $_.Name -notlike "build.py" -and $_.FullName -notlike "*venv*" } | Select-Object -First 1 -ExpandProperty FullName
+        }
+
         if ($scriptPath) {
-            echo "Found script at: $scriptPath"
+            echo "Target script identified at: $scriptPath"
             pyinstaller --onefile --noconsole --clean $scriptPath
         } else {
-            echo "ERROR: Could not find ExtractorGUI.py or extractorgui.py in the repository."
+            echo "ERROR: No Python script (.py) found in the entire repository."
             exit 1
         }
 
     - name: Verify Build
       run: |
         if (Test-Path dist/*.exe) {
-            echo "Build successful."
+            echo "Build successful. Executable generated in dist folder."
         } else {
             echo "Build failed: Output EXE not found."
             exit 1
