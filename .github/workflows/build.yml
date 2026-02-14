@@ -10,16 +10,19 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
-    - name: Debug - List Files
+    - name: Debug - List All Files
       run: |
-        echo "Listing all files in the repository to debug names:"
-        dir /s
+        echo "Checking current directory and listing all files:"
+        pwd
+        Get-ChildItem -Recurse | Select-Object FullName
 
     - name: Install dependencies
       run: |
@@ -31,30 +34,27 @@ jobs:
 
     - name: Locate Script and Build
       run: |
-        $scriptPath = Get-ChildItem -Filter "ExtractorGUI.py" -Recurse | Select-Object -First 1 -ExpandProperty FullName
+        $scripts = Get-ChildItem -Include "*.py","*.PY" -Recurse | Where-Object { $_.Name -notlike "build.yml" -and $_.FullName -notlike "*venv*" }
         
-        if (-not $scriptPath) {
-            $scriptPath = Get-ChildItem -Filter "extractorgui.py" -Recurse | Select-Object -First 1 -ExpandProperty FullName
-        }
-
-        if (-not $scriptPath) {
-            echo "Specific name not found, searching for any Python script..."
-            $scriptPath = Get-ChildItem -Include "*.py","*.PY" -Recurse | Where-Object { $_.Name -notlike "build.py" -and $_.FullName -notlike "*venv*" } | Select-Object -First 1 -ExpandProperty FullName
-        }
-
-        if ($scriptPath) {
-            echo "Target script identified at: $scriptPath"
-            pyinstaller --onefile --noconsole --clean $scriptPath
-        } else {
+        if ($scripts.Count -eq 0) {
             echo "ERROR: No Python script (.py) found in the entire repository."
-            echo "Please check the 'Debug - List Files' step above to see how your files are named."
             exit 1
         }
+
+        $targetScript = $scripts | Where-Object { $_.Name -ieq "ExtractorGUI.py" } | Select-Object -First 1
+        if (-not $targetScript) {
+            $targetScript = $scripts | Select-Object -First 1
+            echo "Warning: ExtractorGUI.py not found. Using alternative: $($targetScript.Name)"
+        }
+
+        echo "Target script identified at: $($targetScript.FullName)"
+        pyinstaller --onefile --noconsole --clean "$($targetScript.FullName)"
 
     - name: Verify Build
       run: |
         if (Test-Path dist/*.exe) {
             echo "Build successful. Executable generated in dist folder."
+            Get-ChildItem dist/*.exe
         } else {
             echo "Build failed: Output EXE not found."
             exit 1
