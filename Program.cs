@@ -10,16 +10,15 @@ namespace ScsExtractorGui
 {
     public class MainForm : Form
     {
-        private TextBox txtPath, txtPartial, txtPathsFile, txtFilter, txtSalt, txtManual, txtLog;
+        private TextBox txtPath, txtPartial, txtFilter, txtSalt, txtManual, txtLog;
         private CheckBox chkDeep, chkSeparate, chkSkip, chkRaw;
-        private Button btnBrowse, btnBrowsePathsFile, btnStart, btnStop;
+        private Button btnBrowse, btnStart, btnStop;
         private Process? currentProcess;
-        private CancellationTokenSource? cts;
 
         public MainForm()
         {
-            this.Text = "SCS Extractor GUI - Pro with Stop Feature";
-            this.Size = new Size(650, 900);
+            this.Text = "SCS Extractor GUI - Pro (Partial Edition)";
+            this.Size = new Size(650, 800);
             this.Font = new Font("Segoe UI", 9);
             this.StartPosition = FormStartPosition.CenterScreen;
 
@@ -34,52 +33,42 @@ namespace ScsExtractorGui
                     if (ofd.ShowDialog() == DialogResult.OK) txtPath.Text = ofd.FileName;
             };
 
+            // Partial Extraction (-p) - NEW Main Field
+            Label lblPartial = new Label { Text = "Partial Extraction (-p) [e.g. /def, /vehicle/truck]:", Location = new Point(leftMargin, 70), AutoSize = true };
+            txtPartial = new TextBox { Location = new Point(leftMargin, 90), Size = new Size(590, 25), PlaceholderText = "Enter folders or files separated by commas..." };
+
             // Filter (-f)
-            Label lblFilter = new Label { Text = "Filter Patterns (-f):", Location = new Point(leftMargin, 70), AutoSize = true };
-            txtFilter = new TextBox { Location = new Point(leftMargin, 90), Size = new Size(590, 25) };
-
-            // Partial Extraction (-p)
-            Label lblPartial = new Label { Text = "Partial Extraction (-p):", Location = new Point(leftMargin, 130), AutoSize = true };
-            txtPartial = new TextBox { Location = new Point(leftMargin, 150), Size = new Size(590, 25) };
-
-            // Paths File (-P)
-            Label lblPathsFile = new Label { Text = "Paths Text File (-P):", Location = new Point(leftMargin, 190), AutoSize = true };
-            txtPathsFile = new TextBox { Location = new Point(leftMargin, 210), Size = new Size(480, 25) };
-            btnBrowsePathsFile = new Button { Text = "Select File", Location = new Point(510, 209), Size = new Size(100, 27) };
-            btnBrowsePathsFile.Click += (s, e) => {
-                using (OpenFileDialog ofd = new OpenFileDialog { Filter = "Text Files|*.txt|All Files|*.*" })
-                    if (ofd.ShowDialog() == DialogResult.OK) txtPathsFile.Text = ofd.FileName;
-            };
+            Label lblFilter = new Label { Text = "Filter Patterns (-f) [e.g. *volvo*, r/\\.pmd$/]:", Location = new Point(leftMargin, 130), AutoSize = true };
+            txtFilter = new TextBox { Location = new Point(leftMargin, 150), Size = new Size(590, 25) };
 
             // HashFS Options
-            Label lblSalt = new Label { Text = "HashFS Salt (--salt):", Location = new Point(leftMargin, 250), AutoSize = true };
-            txtSalt = new TextBox { Location = new Point(leftMargin, 270), Size = new Size(300, 25) };
-            chkRaw = new CheckBox { Text = "Raw Dumps (--raw)", Location = new Point(350, 270), AutoSize = true };
+            Label lblSalt = new Label { Text = "HashFS Salt (--salt):", Location = new Point(leftMargin, 190), AutoSize = true };
+            txtSalt = new TextBox { Location = new Point(leftMargin, 210), Size = new Size(300, 25) };
+            chkRaw = new CheckBox { Text = "Raw Dumps (--raw)", Location = new Point(350, 210), AutoSize = true };
 
             // Checkbox Options
-            chkDeep = new CheckBox { Text = "Deep Mode (--deep)", Location = new Point(leftMargin, 310), AutoSize = true };
-            chkSeparate = new CheckBox { Text = "Separate Folders (--separate)", Location = new Point(200, 310), AutoSize = true };
-            chkSkip = new CheckBox { Text = "Skip Existing (--skip-existing)", Location = new Point(400, 310), AutoSize = true };
+            chkDeep = new CheckBox { Text = "Deep Mode (--deep)", Location = new Point(leftMargin, 250), AutoSize = true };
+            chkSeparate = new CheckBox { Text = "Separate Folders (--separate)", Location = new Point(200, 250), AutoSize = true };
+            chkSkip = new CheckBox { Text = "Skip Existing (--skip-existing)", Location = new Point(400, 250), AutoSize = true };
 
             // Manual Command
-            Label lblManual = new Label { Text = "Additional Manual Commands:", Location = new Point(leftMargin, 350), AutoSize = true };
-            txtManual = new TextBox { Location = new Point(leftMargin, 370), Size = new Size(590, 25) };
+            Label lblManual = new Label { Text = "Additional Manual Commands:", Location = new Point(leftMargin, 290), AutoSize = true };
+            txtManual = new TextBox { Location = new Point(leftMargin, 310), Size = new Size(590, 25) };
 
             // Log Output
-            txtLog = new TextBox { Location = new Point(leftMargin, 410), Size = new Size(590, 300), Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, BackColor = Color.Black, ForeColor = Color.LightGray };
+            txtLog = new TextBox { Location = new Point(leftMargin, 350), Size = new Size(590, 320), Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, BackColor = Color.Black, ForeColor = Color.LightGray };
 
-            // Start Button
-            btnStart = new Button { Text = "START EXTRACTION", Location = new Point(leftMargin, 730), Size = new Size(285, 50), BackColor = Color.DarkSlateBlue, ForeColor = Color.White, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
+            // Action Buttons
+            btnStart = new Button { Text = "START EXTRACTION", Location = new Point(leftMargin, 690), Size = new Size(285, 50), BackColor = Color.DarkSlateBlue, ForeColor = Color.White, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
             btnStart.Click += RunExtractor;
 
-            // Stop Button - NEW
-            btnStop = new Button { Text = "STOP", Location = new Point(325, 730), Size = new Size(285, 50), BackColor = Color.Firebrick, ForeColor = Color.White, Font = new Font("Segoe UI", 10, FontStyle.Bold), Enabled = false };
+            btnStop = new Button { Text = "STOP", Location = new Point(325, 690), Size = new Size(285, 50), BackColor = Color.Firebrick, ForeColor = Color.White, Font = new Font("Segoe UI", 10, FontStyle.Bold), Enabled = false };
             btnStop.Click += StopExtraction;
 
             this.Controls.AddRange(new Control[] { 
-                lbl, txtPath, btnBrowse, lblFilter, txtFilter, lblPartial, txtPartial, 
-                lblPathsFile, txtPathsFile, btnBrowsePathsFile, lblSalt, txtSalt, chkRaw,
-                chkDeep, chkSeparate, chkSkip, lblManual, txtManual, txtLog, btnStart, btnStop 
+                lbl, txtPath, btnBrowse, lblPartial, txtPartial, lblFilter, txtFilter, 
+                lblSalt, txtSalt, chkRaw, chkDeep, chkSeparate, chkSkip, 
+                lblManual, txtManual, txtLog, btnStart, btnStop 
             });
         }
 
@@ -87,11 +76,11 @@ namespace ScsExtractorGui
         {
             try {
                 if (currentProcess != null && !currentProcess.HasExited) {
-                    currentProcess.Kill(true); // Process tree shoho kill korbe
-                    txtLog.AppendText("\r\n[!] Extraction stopped by user.\r\n");
+                    currentProcess.Kill(true);
+                    txtLog.AppendText("\r\n[!] Stopped by User.\r\n");
                 }
             } catch (Exception ex) {
-                txtLog.AppendText("\r\nError stopping process: " + ex.Message + "\r\n");
+                txtLog.AppendText("\r\nError: " + ex.Message + "\r\n");
             }
         }
 
@@ -99,7 +88,7 @@ namespace ScsExtractorGui
         {
             string target = txtPath.Text;
             if (string.IsNullOrEmpty(target)) {
-                MessageBox.Show("Target file select korun!");
+                MessageBox.Show("Please select a target file!");
                 return;
             }
 
@@ -111,7 +100,6 @@ namespace ScsExtractorGui
             if (!string.IsNullOrWhiteSpace(txtSalt.Text)) args += $" --salt={txtSalt.Text.Trim()}";
             if (!string.IsNullOrWhiteSpace(txtFilter.Text)) args += $" --filter=\"{txtFilter.Text.Trim()}\"";
             if (!string.IsNullOrWhiteSpace(txtPartial.Text)) args += $" --partial=\"{txtPartial.Text.Trim()}\"";
-            if (!string.IsNullOrWhiteSpace(txtPathsFile.Text)) args += $" --paths=\"{txtPathsFile.Text.Trim()}\"";
             if (!string.IsNullOrWhiteSpace(txtManual.Text)) args += $" {txtManual.Text.Trim()}";
 
             btnStart.Enabled = false;
@@ -139,8 +127,7 @@ namespace ScsExtractorGui
                             currentProcess.WaitForExit();
                         }
                     }
-                }
-                catch (Exception ex) {
+                } catch (Exception ex) {
                     this.Invoke(new Action(() => txtLog.AppendText("ERROR: " + ex.Message)));
                 }
             });
