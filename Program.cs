@@ -3,17 +3,21 @@ using System.Diagnostics;
 using System.Windows.Forms;
 using System.Drawing;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 namespace ScsExtractorGui
 {
     public class MainForm : Form
     {
         private TextBox txtPath, txtPartial, txtPathsFile, txtFilter, txtSalt, txtManual, txtLog;
         private CheckBox chkDeep, chkSeparate, chkSkip, chkRaw;
-        private Button btnBrowse, btnBrowsePathsFile, btnStart;
+        private Button btnBrowse, btnBrowsePathsFile, btnStart, btnStop;
+        private Process? currentProcess;
+        private CancellationTokenSource? cts;
         public MainForm()
         {
-            this.Text = "SCS Extractor GUI - Pro";
-            this.Size = new Size(650, 850);
+            this.Text = "SCS Extractor GUI - Pro with Stop Feature";
+            this.Size = new Size(650, 900);
             this.Font = new Font("Segoe UI", 9);
             this.StartPosition = FormStartPosition.CenterScreen;
             int leftMargin = 20;
@@ -25,9 +29,9 @@ namespace ScsExtractorGui
                     if (ofd.ShowDialog() == DialogResult.OK) txtPath.Text = ofd.FileName;
             };
             Label lblFilter = new Label { Text = "Filter Patterns (-f):", Location = new Point(leftMargin, 70), AutoSize = true };
-            txtFilter = new TextBox { Location = new Point(leftMargin, 90), Size = new Size(590, 25), PlaceholderText = "e.g. *volvo_fh_2024*" };
+            txtFilter = new TextBox { Location = new Point(leftMargin, 90), Size = new Size(590, 25) };
             Label lblPartial = new Label { Text = "Partial Extraction (-p):", Location = new Point(leftMargin, 130), AutoSize = true };
-            txtPartial = new TextBox { Location = new Point(leftMargin, 150), Size = new Size(590, 25), PlaceholderText = "e.g. /def,/map" };
+            txtPartial = new TextBox { Location = new Point(leftMargin, 150), Size = new Size(590, 25) };
             Label lblPathsFile = new Label { Text = "Paths Text File (-P):", Location = new Point(leftMargin, 190), AutoSize = true };
             txtPathsFile = new TextBox { Location = new Point(leftMargin, 210), Size = new Size(480, 25) };
             btnBrowsePathsFile = new Button { Text = "Select File", Location = new Point(510, 209), Size = new Size(100, 27) };
@@ -36,22 +40,36 @@ namespace ScsExtractorGui
                     if (ofd.ShowDialog() == DialogResult.OK) txtPathsFile.Text = ofd.FileName;
             };
             Label lblSalt = new Label { Text = "HashFS Salt (--salt):", Location = new Point(leftMargin, 250), AutoSize = true };
-            txtSalt = new TextBox { Location = new Point(leftMargin, 270), Size = new Size(300, 25), PlaceholderText = "Enter custom salt if needed" };
+            txtSalt = new TextBox { Location = new Point(leftMargin, 270), Size = new Size(300, 25) };
             chkRaw = new CheckBox { Text = "Raw Dumps (--raw)", Location = new Point(350, 270), AutoSize = true };
             chkDeep = new CheckBox { Text = "Deep Mode (--deep)", Location = new Point(leftMargin, 310), AutoSize = true };
             chkSeparate = new CheckBox { Text = "Separate Folders (--separate)", Location = new Point(200, 310), AutoSize = true };
             chkSkip = new CheckBox { Text = "Skip Existing (--skip-existing)", Location = new Point(400, 310), AutoSize = true };
-            Label lblManual = new Label { Text = "Additional Manual Commands (e.g. --dry-run --quiet):", Location = new Point(leftMargin, 350), AutoSize = true, ForeColor = Color.DarkBlue };
-            txtManual = new TextBox { Location = new Point(leftMargin, 370), Size = new Size(590, 25), PlaceholderText = "--dry-run --list" };
+            Label lblManual = new Label { Text = "Additional Manual Commands:", Location = new Point(leftMargin, 350), AutoSize = true };
+            txtManual = new TextBox { Location = new Point(leftMargin, 370), Size = new Size(590, 25) };
             txtLog = new TextBox { Location = new Point(leftMargin, 410), Size = new Size(590, 300), Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, BackColor = Color.Black, ForeColor = Color.LightGray };
-            btnStart = new Button { Text = "START EXTRACTION", Location = new Point(leftMargin, 730), Size = new Size(590, 50), BackColor = Color.DarkSlateBlue, ForeColor = Color.White, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
+            btnStart = new Button { Text = "START EXTRACTION", Location = new Point(leftMargin, 730), Size = new Size(285, 50), BackColor = Color.DarkSlateBlue, ForeColor = Color.White, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
             btnStart.Click += RunExtractor;
+            btnStop = new Button { Text = "STOP", Location = new Point(325, 730), Size = new Size(285, 50), BackColor = Color.Firebrick, ForeColor = Color.White, Font = new Font("Segoe UI", 10, FontStyle.Bold), Enabled = false };
+            btnStop.Click += StopExtraction;
             this.Controls.AddRange(new Control[] { 
                 lbl, txtPath, btnBrowse, lblFilter, txtFilter, lblPartial, txtPartial, 
                 lblPathsFile, txtPathsFile, btnBrowsePathsFile, lblSalt, txtSalt, chkRaw,
-                chkDeep, chkSeparate, chkSkip, lblManual, txtManual, txtLog, btnStart 
+                chkDeep, chkSeparate, chkSkip, lblManual, txtManual, txtLog, btnStart, btnStop 
             });
         }
+        private void StopExtraction(object? sender, EventArgs e)
+        {
+            try {
+                if (currentProcess != null && !currentProcess.HasExited) {
+                    currentProcess.Kill(true);
+                    txtLog.AppendText("\r\n[!] Extraction stopped by user.\r\n");
+                }
+            } catch (Exception ex) {
+                txtLog.AppendText("\r\nError stopping process: " + ex.Message + "\r\n");
+            }
+        }
+
         private async void RunExtractor(object? sender, EventArgs? e)
         {
             string target = txtPath.Text;
@@ -70,9 +88,10 @@ namespace ScsExtractorGui
             if (!string.IsNullOrWhiteSpace(txtPathsFile.Text)) args += $" --paths=\"{txtPathsFile.Text.Trim()}\"";
             if (!string.IsNullOrWhiteSpace(txtManual.Text)) args += $" {txtManual.Text.Trim()}";
             btnStart.Enabled = false;
+            btnStop.Enabled = true;
             txtLog.Clear();
             txtLog.AppendText($"Running: extractor.exe {args}\r\n\r\n");
-            await System.Threading.Tasks.Task.Run(() => {
+            await Task.Run(() => {
                 try {
                     ProcessStartInfo psi = new ProcessStartInfo {
                         FileName = "extractor.exe",
@@ -82,12 +101,14 @@ namespace ScsExtractorGui
                         RedirectStandardError = true,
                         CreateNoWindow = true
                     };
-                    using (Process p = Process.Start(psi)!) {
-                        while (!p.StandardOutput.EndOfStream) {
-                            string? line = p.StandardOutput.ReadLine();
-                            this.Invoke(new Action(() => { if (line != null) txtLog.AppendText(line + Environment.NewLine); }));
+                    using (currentProcess = Process.Start(psi)) {
+                        if (currentProcess != null) {
+                            while (!currentProcess.StandardOutput.EndOfStream) {
+                                string? line = currentProcess.StandardOutput.ReadLine();
+                                this.Invoke(new Action(() => { if (line != null) txtLog.AppendText(line + Environment.NewLine); }));
+                            }
+                            currentProcess.WaitForExit();
                         }
-                        p.WaitForExit();
                     }
                 }
                 catch (Exception ex) {
@@ -95,7 +116,8 @@ namespace ScsExtractorGui
                 }
             });
             btnStart.Enabled = true;
-            MessageBox.Show("Kaaj Shesh!");
+            btnStop.Enabled = false;
+            currentProcess = null;
         }
         [STAThread]
         static void Main() { Application.EnableVisualStyles(); Application.Run(new MainForm()); }
