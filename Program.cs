@@ -17,7 +17,7 @@ namespace ScsExtractorGui
 
         public MainForm()
         {
-            this.Text = "SCS Extractor GUI - Pro (Partial Edition)";
+            this.Text = "SCS Extractor GUI - Pro (Full Features)";
             this.Size = new Size(650, 800);
             this.Font = new Font("Segoe UI", 9);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -33,25 +33,25 @@ namespace ScsExtractorGui
                     if (ofd.ShowDialog() == DialogResult.OK) txtPath.Text = ofd.FileName;
             };
 
-            // Partial Extraction (-p) - NEW Main Field
-            Label lblPartial = new Label { Text = "Partial Extraction (-p) [e.g. /def, /vehicle/truck]:", Location = new Point(leftMargin, 70), AutoSize = true };
-            txtPartial = new TextBox { Location = new Point(leftMargin, 90), Size = new Size(590, 25), PlaceholderText = "Enter folders or files separated by commas..." };
+            // Partial Extraction (-p)
+            Label lblPartial = new Label { Text = "Partial Extraction (-p) [e.g. /def, /map]:", Location = new Point(leftMargin, 70), AutoSize = true };
+            txtPartial = new TextBox { Location = new Point(leftMargin, 90), Size = new Size(590, 25), PlaceholderText = "Comma separated folders..." };
 
             // Filter (-f)
-            Label lblFilter = new Label { Text = "Filter Patterns (-f) [e.g. *volvo*, r/\\.pmd$/]:", Location = new Point(leftMargin, 130), AutoSize = true };
+            Label lblFilter = new Label { Text = "Filter Patterns (-f) [e.g. *volvo*]:", Location = new Point(leftMargin, 130), AutoSize = true };
             txtFilter = new TextBox { Location = new Point(leftMargin, 150), Size = new Size(590, 25) };
 
-            // HashFS Options
+            // HashFS Options (Salt & Raw)
             Label lblSalt = new Label { Text = "HashFS Salt (--salt):", Location = new Point(leftMargin, 190), AutoSize = true };
             txtSalt = new TextBox { Location = new Point(leftMargin, 210), Size = new Size(300, 25) };
             chkRaw = new CheckBox { Text = "Raw Dumps (--raw)", Location = new Point(350, 210), AutoSize = true };
 
-            // Checkbox Options
-            chkDeep = new CheckBox { Text = "Deep Mode (--deep)", Location = new Point(leftMargin, 250), AutoSize = true };
+            // Checkbox Options (Including -D--deep)
+            chkDeep = new CheckBox { Text = "Deep Mode (-D/--deep)", Location = new Point(leftMargin, 250), AutoSize = true, Font = new Font("Segoe UI", 9, FontStyle.Bold) };
             chkSeparate = new CheckBox { Text = "Separate Folders (--separate)", Location = new Point(200, 250), AutoSize = true };
             chkSkip = new CheckBox { Text = "Skip Existing (--skip-existing)", Location = new Point(400, 250), AutoSize = true };
 
-            // Manual Command
+            // Manual Command Box
             Label lblManual = new Label { Text = "Additional Manual Commands:", Location = new Point(leftMargin, 290), AutoSize = true };
             txtManual = new TextBox { Location = new Point(leftMargin, 310), Size = new Size(590, 25) };
 
@@ -92,14 +92,18 @@ namespace ScsExtractorGui
                 return;
             }
 
+            // Command Building
             string args = $"\"{target}\"";
-            if (chkDeep.Checked) args += " --deep";
+            if (chkDeep.Checked) args += " --deep"; // -D or --deep flag
             if (chkSeparate.Checked) args += " --separate";
             if (chkSkip.Checked) args += " --skip-existing";
             if (chkRaw.Checked) args += " --raw";
+            
             if (!string.IsNullOrWhiteSpace(txtSalt.Text)) args += $" --salt={txtSalt.Text.Trim()}";
             if (!string.IsNullOrWhiteSpace(txtFilter.Text)) args += $" --filter=\"{txtFilter.Text.Trim()}\"";
             if (!string.IsNullOrWhiteSpace(txtPartial.Text)) args += $" --partial=\"{txtPartial.Text.Trim()}\"";
+            
+            // Manual commands
             if (!string.IsNullOrWhiteSpace(txtManual.Text)) args += $" {txtManual.Text.Trim()}";
 
             btnStart.Enabled = false;
