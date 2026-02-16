@@ -31,7 +31,3 @@ Lightweight: Small file size and fast performance.
 Original Logic/Extractor: All credit for the extraction engine goes to sk-zk.
 
 GUI Design: Developed by TRS120.
-
-📄 License
-
-Please refer to the original sk-zk/Extractor license for extraction logic usage. This GUI is provided as-is for the community.
