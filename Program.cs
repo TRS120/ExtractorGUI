@@ -88,7 +88,6 @@ namespace ScsExtractorGui
             btnStop.Enabled = true;
             txtLog.Clear();
             txtLog.AppendText($"Running: extractor.exe {args}\r\n\r\n");
-
             await Task.Run(() => {
                 try {
                     ProcessStartInfo psi = new ProcessStartInfo {
@@ -99,10 +98,8 @@ namespace ScsExtractorGui
                         RedirectStandardError = true,
                         CreateNoWindow = true
                     };
-
                     currentProcess = Process.Start(psi);
                     if (currentProcess != null) {
-                        // Output read kora
                         while (!currentProcess.StandardOutput.EndOfStream) {
                             string? line = currentProcess.StandardOutput.ReadLine();
                             if (line != null) this.Invoke(new Action(() => txtLog.AppendText(line + Environment.NewLine)));
