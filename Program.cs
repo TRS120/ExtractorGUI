@@ -15,7 +15,7 @@ namespace ScsExtractorGui
         private Process? currentProcess;
         public MainForm()
         {
-            this.Text = "SCS Extractor GUI - Final Stable";
+            this.Text = "Extractor GUI";
             this.Size = new Size(650, 800);
             this.Font = new Font("Segoe UI", 9);
             this.StartPosition = FormStartPosition.CenterScreen;
