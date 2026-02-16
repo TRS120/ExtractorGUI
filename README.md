@@ -1,0 +1,37 @@
+Extractor GUI 🛠️
+
+A simple and user-friendly Graphical User Interface (GUI) for the sk-zk/Extractor tool. This GUI makes it easier to extract game files without using the command line.
+
+📌 Important Note
+
+This is only the GUI. It works as a wrapper and requires the original extractor.exe from the official Extractor repository to function.
+
+🚀 How to Use
+
+Download the Original Extractor: Go to https://github.com/sk-zk/Extractor/releases and download the latest extractor.exe.
+
+Download this GUI: Download the latest release of ExtractorGUI.exe from this repository.
+
+Place them together: Put both extractor.exe and ExtractorGUI.exe in the same folder.
+
+Run: Open ExtractorGUI.exe and start extracting your files!
+
+✨ Features
+
+Easy to use: No more typing commands in the terminal.
+
+Drag & Drop: Easily select the files you want to extract.
+
+Progress Tracking: See what's happening in real-time.
+
+Lightweight: Small file size and fast performance.
+
+🤝 Credits
+
+Original Logic/Extractor: All credit for the extraction engine goes to sk-zk.
+
+GUI Design: Developed by TRS120.
+
+📄 License
+
+Please refer to the original sk-zk/Extractor license for extraction logic usage. This GUI is provided as-is for the community.
