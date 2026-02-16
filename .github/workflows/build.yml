@@ -1,4 +1,4 @@
-name: Build SCS GUI Only
+name: Build Extractor GUI Only
 
 on:
   push:
@@ -23,5 +23,5 @@ jobs:
     - name: Upload GUI Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ScsGui-Standalone
+        name: ExtractorGui
         path: ./GUI_Output/
