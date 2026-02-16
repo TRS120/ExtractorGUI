@@ -4,7 +4,7 @@ A simple and user-friendly Graphical User Interface (GUI) for the sk-zk/Extracto
 
 📌 Important Note
 
-This is only the GUI. It works as a wrapper and requires the original extractor.exe from the official Extractor repository to function.
+This is only the GUI. It works as a wrapper and requires the original extractor.exe from https://github.com/sk-zk/Extractor to function.
 
 🚀 How to Use
 
