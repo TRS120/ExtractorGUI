@@ -10,7 +10,7 @@ This is only the GUI. It works as a wrapper and requires the original extractor.
 
 Download the Original Extractor: Go to https://github.com/sk-zk/Extractor/releases and download the latest extractor.exe.
 
-Download this GUI: Download the latest release of ExtractorGUI.exe from this repository.
+Download this GUI: The latest release https://github.com/TRS120/ExtractorGUI/releases
 
 Place them together: Put both extractor.exe and ExtractorGUI.exe in the same folder.
 
