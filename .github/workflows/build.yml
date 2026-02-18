@@ -1,13 +1,10 @@
-name: Build Extractor GUI Only
-
+name: Build Extractor GUI
 on:
   push:
     branches: [ "main" ]
-
 jobs:
   build:
     runs-on: windows-latest
-
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
@@ -16,12 +13,10 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '9.0.x'
-
     - name: Build GUI App
-      run: dotnet publish ExtractorGui.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true -o ./GUI_Output
-
+      run: dotnet publish ExtractorGui.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true /p:DebugType=None /p:DebugSymbols=false -o ./GUI_Output
     - name: Upload GUI Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ExtractorGui
+        name: ExtractorGui-Win64
         path: ./GUI_Output/
