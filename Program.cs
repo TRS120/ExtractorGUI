@@ -18,16 +18,18 @@ namespace ScsExtractorGui
         private TabControl? tabControl;
         private Process? currentProcess;
 
-        private readonly Color BgColor = Color.FromArgb(28, 28, 28);
-        private readonly Color ControlBg = Color.FromArgb(45, 45, 45);
-        private readonly Color AccentColor = Color.FromArgb(0, 120, 212);
-        private readonly Color TextColor = Color.FromArgb(255, 255, 255);
-        private readonly Color SecondaryText = Color.FromArgb(160, 160, 160);
+        // Light mode colors (with dark log box)
+        private readonly Color BgColor = SystemColors.Control;
+        private readonly Color ControlBg = Color.White;
+        private readonly Color AccentColor = SystemColors.Highlight;
+        private readonly Color TextColor = SystemColors.ControlText;
+        private readonly Color SecondaryText = SystemColors.GrayText;
+        private readonly Color ButtonBg = SystemColors.ButtonFace;
         private readonly string extractorPath = "extractor.exe";
 
         public MainForm()
         {
-            this.Text = "SCS Extractor GUI — Complete Edition";
+            this.Text = "SCS Extractor GUI — Light Edition";
             this.Size = new Size(750, 1000);
             this.BackColor = BgColor;
             this.ForeColor = TextColor;
@@ -55,11 +57,11 @@ namespace ScsExtractorGui
                 ForeColor = TextColor
             };
 
-            TabPage basicTab = new TabPage("Basic Options") { BackColor = BgColor };
+            TabPage basicTab = new TabPage("Basic Options") { BackColor = ControlBg };
             AddBasicControls(basicTab);
-            TabPage advancedTab = new TabPage("Advanced") { BackColor = BgColor };
+            TabPage advancedTab = new TabPage("Advanced") { BackColor = ControlBg };
             AddAdvancedControls(advancedTab);
-            TabPage hashfsTab = new TabPage("HashFS") { BackColor = BgColor };
+            TabPage hashfsTab = new TabPage("HashFS") { BackColor = ControlBg };
             AddHashFSControls(hashfsTab);
 
             tabControl.TabPages.AddRange(new TabPage[] { basicTab, advancedTab, hashfsTab });
@@ -75,9 +77,11 @@ namespace ScsExtractorGui
 
             btnStart = CreateButton("START EXTRACTION", left, 890, 340, 45, AccentColor);
             btnStart.Font = new Font(this.Font, FontStyle.Bold);
+            btnStart.ForeColor = Color.White;
             btnStart.Click += RunExtractor;
 
-            btnStop = CreateButton("STOP", 370, 890, 340, 45, Color.FromArgb(190, 30, 30));
+            btnStop = CreateButton("STOP", 370, 890, 340, 45, Color.FromArgb(220, 53, 69));
+            btnStop.ForeColor = Color.White;
             btnStop.Enabled = false;
             btnStop.Click += (s, e) => KillProcessTree();
 
@@ -93,7 +97,8 @@ namespace ScsExtractorGui
             AddLabel(page, "Target File/Folder:", left, y);
             y += 20;
             txtPath = CreateTextBox(left, y, 500);
-            btnBrowse = CreateButton("Browse...", 530, y - 2, 120, 32, ControlBg);
+            btnBrowse = CreateButton("Browse...", 530, y - 2, 120, 32, ButtonBg);
+            btnBrowse.ForeColor = TextColor;
             btnBrowse.Click += (s, e) =>
             {
                 using (OpenFileDialog ofd = new OpenFileDialog { Filter = "SCS Files|*.scs|All Files|*.*", Title = "Select SCS File" })
@@ -106,7 +111,8 @@ namespace ScsExtractorGui
             y += 20;
             txtDest = CreateTextBox(left, y, 500);
             txtDest.Text = "./extracted";
-            btnDestBrowse = CreateButton("Browse...", 530, y - 2, 120, 32, ControlBg);
+            btnDestBrowse = CreateButton("Browse...", 530, y - 2, 120, 32, ButtonBg);
+            btnDestBrowse.ForeColor = TextColor;
             btnDestBrowse.Click += (s, e) =>
             {
                 using (FolderBrowserDialog fbd = new FolderBrowserDialog())
@@ -147,7 +153,8 @@ namespace ScsExtractorGui
             AddLabel(page, "Paths File (-P):", left, y);
             y += 20;
             txtPathsFile = CreateTextBox(left, y, 500);
-            btnPathsBrowse = CreateButton("Browse...", 530, y - 2, 120, 32, ControlBg);
+            btnPathsBrowse = CreateButton("Browse...", 530, y - 2, 120, 32, ButtonBg);
+            btnPathsBrowse.ForeColor = TextColor;
             btnPathsBrowse.Click += (s, e) =>
             {
                 using (OpenFileDialog ofd = new OpenFileDialog())
@@ -183,6 +190,7 @@ namespace ScsExtractorGui
 
             AddHeader(page, "OUTPUT LOG", left, y);
             y += 30;
+            // Black background, green text log box (like cmd)
             txtLog = new TextBox
             {
                 Location = new Point(left, y),
@@ -191,7 +199,7 @@ namespace ScsExtractorGui
                 ReadOnly = true,
                 ScrollBars = ScrollBars.Vertical,
                 BackColor = Color.Black,
-                ForeColor = Color.FromArgb(0, 255, 128),
+                ForeColor = Color.FromArgb(0, 255, 128), // classic green
                 Font = new Font("Cascadia Code", 9),
                 BorderStyle = BorderStyle.FixedSingle
             };
@@ -218,7 +226,8 @@ namespace ScsExtractorGui
             AddLabel(page, "Additional Paths File (--additional):", left, y);
             y += 25;
             txtAdditionalFile = CreateTextBox(left, y, 500);
-            btnAdditionalBrowse = CreateButton("Browse...", 530, y - 2, 120, 32, ControlBg);
+            btnAdditionalBrowse = CreateButton("Browse...", 530, y - 2, 120, 32, ButtonBg);
+            btnAdditionalBrowse.ForeColor = TextColor;
             btnAdditionalBrowse.Click += (s, e) =>
             {
                 using (OpenFileDialog ofd = new OpenFileDialog())
@@ -282,7 +291,7 @@ namespace ScsExtractorGui
                 Text = text,
                 Location = new Point(x, y),
                 AutoSize = true,
-                FlatStyle = FlatStyle.Flat,
+                FlatStyle = FlatStyle.Standard,
                 ForeColor = TextColor
             };
         }
@@ -294,7 +303,7 @@ namespace ScsExtractorGui
                 Text = text,
                 Location = new Point(x, y),
                 AutoSize = true,
-                FlatStyle = FlatStyle.Flat,
+                FlatStyle = FlatStyle.Standard,
                 ForeColor = TextColor,
                 Checked = checkedState
             };
@@ -308,9 +317,10 @@ namespace ScsExtractorGui
                 Location = new Point(x, y),
                 Size = new Size(w, h),
                 BackColor = bg,
-                FlatStyle = FlatStyle.Flat,
-                ForeColor = Color.White,
-                Cursor = Cursors.Hand
+                FlatStyle = FlatStyle.Standard,
+                ForeColor = TextColor,
+                Cursor = Cursors.Hand,
+                UseVisualStyleBackColor = true
             };
         }
 
