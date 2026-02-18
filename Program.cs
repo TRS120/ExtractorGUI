@@ -13,11 +13,8 @@ namespace ScsExtractorGui
         private Button btnBrowse, btnOutBrowse, btnStart, btnStop;
         private ProgressBar progressBar;
         private Process? currentProcess;
-        private readonly Color BgColor = Color.FromArgb(28, 28, 28);
-        private readonly Color ControlBg = Color.FromArgb(45, 45, 45);
-        private readonly Color AccentColor = Color.FromArgb(0, 120, 212);
-        private readonly Color TextColor = Color.FromArgb(255, 255, 255);
-        private readonly Color SecondaryText = Color.FromArgb(160, 160, 160);
+        private readonly Color BgColor = Color.FromArgb(28, 28, 28), ControlBg = Color.FromArgb(45, 45, 45), AccentColor = Color.FromArgb(0, 120, 212), TextColor = Color.FromArgb(255, 255, 255), SecondaryText = Color.FromArgb(160, 160, 160);
+        private readonly string extractorPath = "extractor.exe";
         public MainForm()
         {
             this.Text = "Extractor GUI — Win11 Dark";
@@ -28,6 +25,7 @@ namespace ScsExtractorGui
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormClosing += (s, e) => KillProcessTree();
             InitializeComponents();
+            if (!File.Exists(extractorPath)) MessageBox.Show("extractor.exe not found! Please place it in the same folder as this GUI.", "Missing Extractor", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
         private void InitializeComponents()
         {
@@ -36,17 +34,11 @@ namespace ScsExtractorGui
             AddLabel("Target File or Folder:", left, 45);
             txtPath = CreateTextBox(left, 70, 465);
             btnBrowse = CreateButton("Browse", 505, 69, 100, 32, ControlBg);
-            btnBrowse.Click += (s, e) => {
-                using (OpenFileDialog ofd = new OpenFileDialog { Filter = "SCS Files|*.scs|All Files|*.*" })
-                    if (ofd.ShowDialog() == DialogResult.OK) txtPath.Text = ofd.FileName;
-            };
+            btnBrowse.Click += (s, e) => { using (OpenFileDialog ofd = new OpenFileDialog { Filter = "SCS Files|*.scs|All Files|*.*" }) if (ofd.ShowDialog() == DialogResult.OK) txtPath.Text = ofd.FileName; };
             AddLabel("Extraction Path (Optional):", left, 110);
             txtOutPath = CreateTextBox(left, 135, 465);
             btnOutBrowse = CreateButton("Select", 505, 134, 100, 32, ControlBg);
-            btnOutBrowse.Click += (s, e) => {
-                using (FolderBrowserDialog fbd = new FolderBrowserDialog())
-                    if (fbd.ShowDialog() == DialogResult.OK) txtOutPath.Text = fbd.SelectedPath;
-            };
+            btnOutBrowse.Click += (s, e) => { using (FolderBrowserDialog fbd = new FolderBrowserDialog()) if (fbd.ShowDialog() == DialogResult.OK) txtOutPath.Text = fbd.SelectedPath; };
             AddHeader("Parameters", left, 185);
             AddLabel("Partial Extraction (-p):", left, 215);
             txtPartial = CreateTextBox(left, 240, width);
@@ -60,7 +52,7 @@ namespace ScsExtractorGui
             chkSkip = CreateCheckBox("Skip Existing", 400, 425);
             AddLabel("Manual Flags:", left, 465);
             txtManual = CreateTextBox(left, 490, width);
-            txtLog = new TextBox { Location = new Point(left, 535), Size = new Size(width, 220), Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, BackColor = Color.Black, ForeColor = Color.FromArgb(0, 255, 128), Font = new Font("Cascadia Code", 9), BorderStyle = BorderStyle.None };
+            txtLog = new TextBox { Location = new Point(left, 535), Size = new Size(width, 220), Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, BackColor = Color.Black, ForeColor = Color.FromArgb(0, 255, 128), Font = new Font("Cascadia Code", 9), BorderStyle = BorderStyle.FixedSingle };
             progressBar = new ProgressBar { Location = new Point(left, 765), Size = new Size(width, 6), Style = ProgressBarStyle.Marquee, Visible = false, MarqueeAnimationSpeed = 30 };
             btnStart = CreateButton("START EXTRACTION", left, 790, 275, 55, AccentColor);
             btnStart.Font = new Font(this.Font, FontStyle.Bold);
@@ -73,18 +65,25 @@ namespace ScsExtractorGui
         private void AddHeader(string text, int x, int y) => this.Controls.Add(new Label { Text = text.ToUpper(), Location = new Point(x, y), AutoSize = true, ForeColor = AccentColor, Font = new Font("Segoe UI Variable Text", 9, FontStyle.Bold) });
         private void AddLabel(string text, int x, int y) => this.Controls.Add(new Label { Text = text, Location = new Point(x, y), AutoSize = true, ForeColor = SecondaryText });
         private TextBox CreateTextBox(int x, int y, int w) => new TextBox { Location = new Point(x, y), Size = new Size(w, 30), BackColor = ControlBg, ForeColor = TextColor, BorderStyle = BorderStyle.FixedSingle };
-        private CheckBox CreateCheckBox(string text, int x, int y) => new CheckBox { Text = text, Location = new Point(x, y), AutoSize = true, FlatStyle = FlatStyle.Flat };
+        private CheckBox CreateCheckBox(string text, int x, int y) => new CheckBox { Text = text, Location = new Point(x, y), AutoSize = true, FlatStyle = FlatStyle.Flat, ForeColor = TextColor };
         private Button CreateButton(string text, int x, int y, int w, int h, Color bg) => new Button { Text = text, Location = new Point(x, y), Size = new Size(w, h), BackColor = bg, FlatStyle = FlatStyle.Flat, ForeColor = Color.White, Cursor = Cursors.Hand };
-        private void Log(string msg) => this.Invoke(() => { txtLog.AppendText(msg + Environment.NewLine); txtLog.SelectionStart = txtLog.Text.Length; txtLog.ScrollToCaret(); });
+        private void Log(string msg) { if (txtLog.InvokeRequired) { txtLog.Invoke(new Action<string>(Log), msg); return; } txtLog.AppendText(msg + Environment.NewLine); txtLog.SelectionStart = txtLog.Text.Length; txtLog.ScrollToCaret(); }
         private async void RunExtractor(object? sender, EventArgs? e)
         {
             if (string.IsNullOrEmpty(txtPath.Text)) { MessageBox.Show("Please select an input file.", "Missing Input", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!File.Exists(extractorPath)) { MessageBox.Show("extractor.exe not found!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
             btnStart.Enabled = false; btnStop.Enabled = true; progressBar.Visible = true; txtLog.Clear();
             string args = BuildArguments();
-            Log($">> CMD: extractor.exe {args}\r\n");
-            await Task.Run(() => {
-                try {
-                    currentProcess = new Process { StartInfo = new ProcessStartInfo { FileName = "extractor.exe", Arguments = args, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true } };
+            Log($">> CMD: {extractorPath} {args}\r\n");
+            await Task.Run(() => RunProcess(args));
+            btnStart.Enabled = true; btnStop.Enabled = false; progressBar.Visible = false;
+            Log("\r\n>> Operation Finished.");
+        }
+        private void RunProcess(string args)
+        {
+            try {
+                using (currentProcess = new Process()) {
+                    currentProcess.StartInfo = new ProcessStartInfo { FileName = extractorPath, Arguments = args, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true, StandardOutputEncoding = System.Text.Encoding.UTF8, StandardErrorEncoding = System.Text.Encoding.UTF8 };
                     currentProcess.OutputDataReceived += (s, a) => { if (a.Data != null) Log(a.Data); };
                     currentProcess.ErrorDataReceived += (s, a) => { if (a.Data != null) Log("ERR: " + a.Data); };
                     currentProcess.Start();
@@ -92,10 +91,9 @@ namespace ScsExtractorGui
                     currentProcess.BeginErrorReadLine();
                     currentProcess.WaitForExit();
                 }
-                catch (Exception ex) { Log("CRITICAL ERROR: " + ex.Message); }
-            });
-            btnStart.Enabled = true; btnStop.Enabled = false; progressBar.Visible = false;
-            Log("\r\n>> Operation Finished.");
+            }
+            catch (Exception ex) { Log("CRITICAL ERROR: " + ex.Message); }
+            finally { currentProcess = null; }
         }
         private string BuildArguments()
         {
@@ -113,12 +111,14 @@ namespace ScsExtractorGui
         }
         private void KillProcessTree()
         {
-            if (currentProcess == null) return;
-            try { Process.Start(new ProcessStartInfo { FileName = "taskkill", Arguments = $"/F /T /PID {currentProcess.Id}", CreateNoWindow = true, UseShellExecute = false })?.WaitForExit(); Log("\r\n[!] ABORTED."); }
-            catch { }
-            finally { currentProcess = null; }
+            if (currentProcess == null || currentProcess.HasExited) return;
+            try {
+                currentProcess.Kill();
+                currentProcess.WaitForExit(2000);
+                if (!currentProcess.HasExited) Process.Start(new ProcessStartInfo { FileName = "taskkill", Arguments = $"/F /T /PID {currentProcess.Id}", CreateNoWindow = true, UseShellExecute = false })?.WaitForExit();
+                Log("\r\n[!] TERMINATED.");
+            } catch { } finally { currentProcess = null; }
         }
-        [STAThread]
-        static void Main() { Application.EnableVisualStyles(); Application.SetHighDpiMode(HighDpiMode.PerMonitorV2); Application.Run(new MainForm()); }
+        [STAThread] static void Main() { Application.EnableVisualStyles(); Application.SetHighDpiMode(HighDpiMode.PerMonitorV2); Application.Run(new MainForm()); }
     }
 }
