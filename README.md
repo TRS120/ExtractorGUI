@@ -26,7 +26,7 @@ Progress Tracking: See what's happening in real-time.
 
 Lightweight: Small file size and fast performance.
 
-![App Screenshot](https://github.com/TRS120/ExtractorGUI/blob/55caa6dc9d8628046b26b686516a24dde75b07f6/Screenshot%202026-02-16%20213559.png?raw=true)
+![App Screenshot](https://github.com/TRS120/ExtractorGUI/blob/bdc24d6a447471535422478327d31850cd377c48/Screenshot%202026-02-19%20050516.png?raw=true)
 
 🤝 Credits
 
