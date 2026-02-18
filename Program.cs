@@ -18,13 +18,14 @@ namespace ScsExtractorGui
         private TabControl? tabControl;
         private Process? currentProcess;
 
+        // Light mode colors
         private readonly Color BgColor = SystemColors.Control;
         private readonly Color ControlBg = Color.White;
         private readonly Color TextColor = SystemColors.ControlText;
         private readonly Color SecondaryText = SystemColors.GrayText;
         private readonly Color ButtonBg = SystemColors.ButtonFace;
         private readonly Color StartButtonColor = Color.FromArgb(40, 167, 69);
-        private readonly Color StopButtonColor = Color.FromArgb(220, 53, 69);
+        private readonly Color StopButtonColor = Color.FromArgb(220, 53, 69); 
         private readonly string extractorPath = "extractor.exe";
 
         public MainForm()
@@ -76,13 +77,19 @@ namespace ScsExtractorGui
                 MarqueeAnimationSpeed = 30
             };
 
-            btnStart = CreateButton("START EXTRACTION", left, 740, 340, 45, AccentColor);
+            btnStart = CreateButton("START EXTRACTION", left, 740, 340, 45, StartButtonColor);
             btnStart.Font = new Font(this.Font, FontStyle.Bold);
             btnStart.ForeColor = Color.White;
+            btnStart.FlatStyle = FlatStyle.Flat;
+            btnStart.FlatAppearance.BorderSize = 1;
+            btnStart.FlatAppearance.BorderColor = Color.FromArgb(30, 126, 52);
             btnStart.Click += RunExtractor;
 
-            btnStop = CreateButton("STOP", 370, 740, 340, 45, Color.FromArgb(220, 53, 69));
+            btnStop = CreateButton("STOP", 370, 740, 340, 45, StopButtonColor);
             btnStop.ForeColor = Color.White;
+            btnStop.FlatStyle = FlatStyle.Flat;
+            btnStop.FlatAppearance.BorderSize = 1;
+            btnStop.FlatAppearance.BorderColor = Color.FromArgb(165, 40, 52);
             btnStop.Enabled = false;
             btnStop.Click += (s, e) => KillProcessTree();
 
@@ -100,6 +107,7 @@ namespace ScsExtractorGui
             txtPath = CreateTextBox(left, y, 500);
             btnBrowse = CreateButton("Browse...", 530, y - 2, 120, 32, ButtonBg);
             btnBrowse.ForeColor = TextColor;
+            btnBrowse.FlatStyle = FlatStyle.Standard;
             btnBrowse.Click += (s, e) =>
             {
                 using (OpenFileDialog ofd = new OpenFileDialog { Filter = "SCS Files|*.scs|All Files|*.*", Title = "Select SCS File" })
@@ -114,6 +122,7 @@ namespace ScsExtractorGui
             txtDest.Text = "./extracted";
             btnDestBrowse = CreateButton("Browse...", 530, y - 2, 120, 32, ButtonBg);
             btnDestBrowse.ForeColor = TextColor;
+            btnDestBrowse.FlatStyle = FlatStyle.Standard;
             btnDestBrowse.Click += (s, e) =>
             {
                 using (FolderBrowserDialog fbd = new FolderBrowserDialog())
@@ -156,6 +165,7 @@ namespace ScsExtractorGui
             txtPathsFile = CreateTextBox(left, y, 500);
             btnPathsBrowse = CreateButton("Browse...", 530, y - 2, 120, 32, ButtonBg);
             btnPathsBrowse.ForeColor = TextColor;
+            btnPathsBrowse.FlatStyle = FlatStyle.Standard;
             btnPathsBrowse.Click += (s, e) =>
             {
                 using (OpenFileDialog ofd = new OpenFileDialog())
@@ -228,6 +238,7 @@ namespace ScsExtractorGui
             txtAdditionalFile = CreateTextBox(left, y, 500);
             btnAdditionalBrowse = CreateButton("Browse...", 530, y - 2, 120, 32, ButtonBg);
             btnAdditionalBrowse.ForeColor = TextColor;
+            btnAdditionalBrowse.FlatStyle = FlatStyle.Standard;
             btnAdditionalBrowse.Click += (s, e) =>
             {
                 using (OpenFileDialog ofd = new OpenFileDialog())
@@ -255,7 +266,7 @@ namespace ScsExtractorGui
                 Text = text,
                 Location = new Point(x, y),
                 AutoSize = true,
-                ForeColor = AccentColor,
+                ForeColor = SystemColors.Highlight,
                 Font = new Font("Segoe UI", 9, FontStyle.Bold)
             });
         }
