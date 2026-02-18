@@ -28,7 +28,7 @@ namespace ScsExtractorGui
         public MainForm()
         {
             this.Text = "SCS Extractor GUI — Complete Edition";
-            this.Size = new Size(750, 1000);
+            this.Size = new Size(700, 900);
             this.BackColor = BgColor;
             this.ForeColor = TextColor;
             this.Font = new Font("Segoe UI", 10);
