@@ -18,13 +18,13 @@ namespace ScsExtractorGui
         private TabControl? tabControl;
         private Process? currentProcess;
 
-        // Light mode colors (with dark log box)
         private readonly Color BgColor = SystemColors.Control;
         private readonly Color ControlBg = Color.White;
-        private readonly Color AccentColor = SystemColors.Highlight;
         private readonly Color TextColor = SystemColors.ControlText;
         private readonly Color SecondaryText = SystemColors.GrayText;
         private readonly Color ButtonBg = SystemColors.ButtonFace;
+        private readonly Color StartButtonColor = Color.FromArgb(40, 167, 69);
+        private readonly Color StopButtonColor = Color.FromArgb(220, 53, 69);
         private readonly string extractorPath = "extractor.exe";
 
         public MainForm()
