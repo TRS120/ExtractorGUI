@@ -39,13 +39,13 @@ namespace ScsExtractorGui
             this.StartPosition = FormStartPosition.CenterScreen;
             this.AllowDrop = true;
 
-            // Global drag-drop (with null checks)
+            // Global drag-drop – safe pattern matching, no warnings
             this.DragEnter += (s, e) => { if (e.Data.GetDataPresent(DataFormats.FileDrop)) e.Effect = DragDropEffects.Copy; };
             this.DragDrop += (s, e) => {
                 if (e.Data.GetDataPresent(DataFormats.FileDrop))
                 {
-                    string[] files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
-                    if (files.Length > 0 && txtPath != null)
+                    var data = e.Data.GetData(DataFormats.FileDrop);
+                    if (data is string[] files && files.Length > 0 && txtPath != null)
                         txtPath.Text = files[0];
                 }
             };
@@ -210,7 +210,7 @@ namespace ScsExtractorGui
 
         private void AddHashFSControls(TabPage page)
         {
-            int left = 15, y = 10;  // width removed (unused)
+            int left = 15, y = 10;
 
             AddHeader(page, "HashFS OPTIONS", left, y);
             y += 25;
