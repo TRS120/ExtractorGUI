@@ -30,7 +30,7 @@ namespace ScsExtractorGui
 
         public MainForm()
         {
-            this.Text = "SCS Extractor GUI — Complete Compact Edition";
+            this.Text = "SCS Extractor GUI";
             this.Size = new Size(750, 700);
             this.MinimumSize = new Size(750, 700);
             this.BackColor = BgColor;
@@ -38,8 +38,6 @@ namespace ScsExtractorGui
             this.Font = new Font("Segoe UI", 10);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.AllowDrop = true;
-
-            // Drag-drop with thorough null checks (fixes CS8602)
             this.DragEnter += (s, e) => {
                 if (e.Data != null && e.Data.GetDataPresent(DataFormats.FileDrop))
                     e.Effect = DragDropEffects.Copy;
