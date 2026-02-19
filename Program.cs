@@ -39,11 +39,15 @@ namespace ScsExtractorGui
             this.StartPosition = FormStartPosition.CenterScreen;
             this.AllowDrop = true;
 
-            // Global drag-drop
+            // Global drag-drop (with null checks)
             this.DragEnter += (s, e) => { if (e.Data.GetDataPresent(DataFormats.FileDrop)) e.Effect = DragDropEffects.Copy; };
             this.DragDrop += (s, e) => {
-                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-                if (files.Length > 0 && txtPath != null) txtPath.Text = files[0];
+                if (e.Data.GetDataPresent(DataFormats.FileDrop))
+                {
+                    string[] files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
+                    if (files.Length > 0 && txtPath != null)
+                        txtPath.Text = files[0];
+                }
             };
 
             this.FormClosing += (s, e) => KillProcessTree();
@@ -108,7 +112,8 @@ namespace ScsExtractorGui
             btnBrowse = CreateButton("Browse...", 565, y - 1, 100, 30, ButtonBg);
             btnBrowse.Click += (s, e) => {
                 using (OpenFileDialog ofd = new OpenFileDialog { Filter = "SCS files|*.scs|All files|*.*" })
-                    if (ofd.ShowDialog() == DialogResult.OK) txtPath!.Text = ofd.FileName;
+                    if (ofd.ShowDialog() == DialogResult.OK && txtPath != null)
+                        txtPath.Text = ofd.FileName;
             };
             page.Controls.AddRange(new Control[] { txtPath, btnBrowse });
 
@@ -120,7 +125,8 @@ namespace ScsExtractorGui
             btnDestBrowse = CreateButton("Browse...", 565, y - 1, 100, 30, ButtonBg);
             btnDestBrowse.Click += (s, e) => {
                 using (FolderBrowserDialog fbd = new FolderBrowserDialog())
-                    if (fbd.ShowDialog() == DialogResult.OK) txtDest!.Text = fbd.SelectedPath;
+                    if (fbd.ShowDialog() == DialogResult.OK && txtDest != null)
+                        txtDest.Text = fbd.SelectedPath;
             };
             page.Controls.AddRange(new Control[] { txtDest, btnDestBrowse });
 
@@ -156,7 +162,8 @@ namespace ScsExtractorGui
             btnPathsBrowse = CreateButton("Browse...", 565, y + 19, 100, 30, ButtonBg);
             btnPathsBrowse.Click += (s, e) => {
                 using (OpenFileDialog ofd = new OpenFileDialog())
-                    if (ofd.ShowDialog() == DialogResult.OK) txtPathsFile!.Text = ofd.FileName;
+                    if (ofd.ShowDialog() == DialogResult.OK && txtPathsFile != null)
+                        txtPathsFile.Text = ofd.FileName;
             };
             page.Controls.AddRange(new Control[] { txtPathsFile, btnPathsBrowse });
 
@@ -203,7 +210,7 @@ namespace ScsExtractorGui
 
         private void AddHashFSControls(TabPage page)
         {
-            int left = 15, width = 665, y = 10;
+            int left = 15, y = 10;  // width removed (unused)
 
             AddHeader(page, "HashFS OPTIONS", left, y);
             y += 25;
@@ -223,7 +230,8 @@ namespace ScsExtractorGui
             btnAdditionalBrowse = CreateButton("Browse...", 565, y + 19, 100, 30, ButtonBg);
             btnAdditionalBrowse.Click += (s, e) => {
                 using (OpenFileDialog ofd = new OpenFileDialog())
-                    if (ofd.ShowDialog() == DialogResult.OK) txtAdditionalFile!.Text = ofd.FileName;
+                    if (ofd.ShowDialog() == DialogResult.OK && txtAdditionalFile != null)
+                        txtAdditionalFile.Text = ofd.FileName;
             };
             page.Controls.AddRange(new Control[] { txtAdditionalFile, btnAdditionalBrowse });
         }
