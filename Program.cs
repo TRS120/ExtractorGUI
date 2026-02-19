@@ -9,87 +9,86 @@ namespace ScsExtractorGui
 {
     public class MainForm : Form
     {
-        private TextBox? txtPath, txtDest, txtFilter, txtPartial, txtSalt;
-        private TextBox? txtManual, txtLog, txtPathsFile, txtAdditionalFile;
-        private CheckBox? chkAll, chkDeep, chkSeparate, chkSkip, chkRaw, chkQuiet, chkDryRun;
+        // Controls
+        private TextBox? txtPath, txtDest, txtFilter, txtPartial, txtPathsFile, txtSalt, txtAdditionalFile, txtManual, txtLog;
+        private CheckBox? chkAll, chkDeep, chkSeparate, chkSkip, chkRaw, chkQuiet, chkDryRun, chkTableAtEnd;
         private RadioButton? rbModeNormal, rbModeList, rbModeListAll, rbModeListEntries, rbModeTree;
-        private Button? btnBrowse, btnDestBrowse, btnStart, btnStop, btnPathsBrowse, btnAdditionalBrowse;
+        private Button? btnBrowse, btnDestBrowse, btnPathsBrowse, btnAdditionalBrowse, btnStart, btnStop;
         private ProgressBar? progressBar;
         private TabControl? tabControl;
         private Process? currentProcess;
 
-        // Light mode colors
+        // Colors
         private readonly Color BgColor = SystemColors.Control;
         private readonly Color ControlBg = Color.White;
         private readonly Color TextColor = SystemColors.ControlText;
         private readonly Color SecondaryText = SystemColors.GrayText;
         private readonly Color ButtonBg = SystemColors.ButtonFace;
         private readonly Color StartButtonColor = Color.FromArgb(40, 167, 69);
-        private readonly Color StopButtonColor = Color.FromArgb(220, 53, 69); 
+        private readonly Color StopButtonColor = Color.FromArgb(220, 53, 69);
         private readonly string extractorPath = "extractor.exe";
 
         public MainForm()
         {
-            this.Text = "SCS Extractor GUI — Light Edition";
-            this.Size = new Size(750, 850);
-            this.MinimumSize = new Size(750, 850);
+            this.Text = "SCS Extractor GUI — Complete Compact Edition";
+            this.Size = new Size(750, 700);
+            this.MinimumSize = new Size(750, 700);
             this.BackColor = BgColor;
             this.ForeColor = TextColor;
             this.Font = new Font("Segoe UI", 10);
             this.StartPosition = FormStartPosition.CenterScreen;
+            this.AllowDrop = true;
+
+            // Global drag-drop
+            this.DragEnter += (s, e) => { if (e.Data.GetDataPresent(DataFormats.FileDrop)) e.Effect = DragDropEffects.Copy; };
+            this.DragDrop += (s, e) => {
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if (files.Length > 0 && txtPath != null) txtPath.Text = files[0];
+            };
+
             this.FormClosing += (s, e) => KillProcessTree();
             InitializeComponents();
 
             if (!File.Exists(extractorPath))
-            {
-                MessageBox.Show("extractor.exe not found in application directory!\nPlease place extractor.exe in the same folder as this GUI.",
-                    "Missing Extractor", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
+                MessageBox.Show("extractor.exe not found!\nPlease place it in this folder.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
         private void InitializeComponents()
         {
-            int left = 20, width = 690;
+            int left = 15, width = 705;
 
             tabControl = new TabControl
             {
                 Location = new Point(left, 10),
-                Size = new Size(width, 700),
-                BackColor = ControlBg,
-                ForeColor = TextColor
+                Size = new Size(width, 560),
+                BackColor = ControlBg
             };
 
-            TabPage basicTab = new TabPage("Basic Options") { BackColor = ControlBg };
-            AddBasicControls(basicTab);
-            TabPage advancedTab = new TabPage("Advanced") { BackColor = ControlBg };
-            AddAdvancedControls(advancedTab);
-            TabPage hashfsTab = new TabPage("HashFS") { BackColor = ControlBg };
-            AddHashFSControls(hashfsTab);
+            tabControl.TabPages.Add(new TabPage("Basic") { BackColor = ControlBg });
+            tabControl.TabPages.Add(new TabPage("Advanced") { BackColor = ControlBg });
+            tabControl.TabPages.Add(new TabPage("HashFS") { BackColor = ControlBg });
 
-            tabControl.TabPages.AddRange(new TabPage[] { basicTab, advancedTab, hashfsTab });
+            AddBasicControls(tabControl.TabPages[0]);
+            AddAdvancedControls(tabControl.TabPages[1]);
+            AddHashFSControls(tabControl.TabPages[2]);
 
             progressBar = new ProgressBar
             {
-                Location = new Point(left, 720),
-                Size = new Size(width, 6),
+                Location = new Point(left, 575),
+                Size = new Size(width, 5),
                 Style = ProgressBarStyle.Marquee,
-                Visible = false,
-                MarqueeAnimationSpeed = 30
+                Visible = false
             };
 
-            btnStart = CreateButton("START EXTRACTION", left, 740, 340, 45, StartButtonColor);
+            btnStart = CreateButton("START EXTRACTION", left, 590, 345, 45, StartButtonColor);
             btnStart.Font = new Font(this.Font, FontStyle.Bold);
             btnStart.ForeColor = Color.White;
             btnStart.FlatStyle = FlatStyle.Flat;
-            btnStart.FlatAppearance.BorderSize = 1;
-            btnStart.FlatAppearance.BorderColor = Color.FromArgb(30, 126, 52);
             btnStart.Click += RunExtractor;
 
-            btnStop = CreateButton("STOP", 370, 740, 340, 45, StopButtonColor);
+            btnStop = CreateButton("STOP", 375, 590, 345, 45, StopButtonColor);
             btnStop.ForeColor = Color.White;
             btnStop.FlatStyle = FlatStyle.Flat;
-            btnStop.FlatAppearance.BorderSize = 1;
-            btnStop.FlatAppearance.BorderColor = Color.FromArgb(165, 40, 52);
             btnStop.Enabled = false;
             btnStop.Click += (s, e) => KillProcessTree();
 
@@ -98,119 +97,105 @@ namespace ScsExtractorGui
 
         private void AddBasicControls(TabPage page)
         {
-            int left = 20, width = 630, y = 20;
+            int left = 15, width = 665, y = 10;
 
+            // Input
             AddHeader(page, "INPUT & OUTPUT", left, y);
-            y += 25;
-            AddLabel(page, "Target File/Folder:", left, y);
+            y += 22;
+            AddLabel(page, "Target File/Folder (drag & drop):", left, y);
             y += 20;
-            txtPath = CreateTextBox(left, y, 500);
-            btnBrowse = CreateButton("Browse...", 530, y - 2, 120, 32, ButtonBg);
-            btnBrowse.ForeColor = TextColor;
-            btnBrowse.FlatStyle = FlatStyle.Standard;
-            btnBrowse.Click += (s, e) =>
-            {
-                using (OpenFileDialog ofd = new OpenFileDialog { Filter = "SCS Files|*.scs|All Files|*.*", Title = "Select SCS File" })
+            txtPath = CreateTextBox(left, y, 540);
+            btnBrowse = CreateButton("Browse...", 565, y - 1, 100, 30, ButtonBg);
+            btnBrowse.Click += (s, e) => {
+                using (OpenFileDialog ofd = new OpenFileDialog { Filter = "SCS files|*.scs|All files|*.*" })
                     if (ofd.ShowDialog() == DialogResult.OK) txtPath!.Text = ofd.FileName;
             };
             page.Controls.AddRange(new Control[] { txtPath, btnBrowse });
-            y += 35;
 
-            AddLabel(page, "Destination Folder (-d):", left, y);
+            y += 35;
+            AddLabel(page, "Destination (-d):", left, y);
             y += 20;
-            txtDest = CreateTextBox(left, y, 500);
+            txtDest = CreateTextBox(left, y, 540);
             txtDest.Text = "./extracted";
-            btnDestBrowse = CreateButton("Browse...", 530, y - 2, 120, 32, ButtonBg);
-            btnDestBrowse.ForeColor = TextColor;
-            btnDestBrowse.FlatStyle = FlatStyle.Standard;
-            btnDestBrowse.Click += (s, e) =>
-            {
+            btnDestBrowse = CreateButton("Browse...", 565, y - 1, 100, 30, ButtonBg);
+            btnDestBrowse.Click += (s, e) => {
                 using (FolderBrowserDialog fbd = new FolderBrowserDialog())
                     if (fbd.ShowDialog() == DialogResult.OK) txtDest!.Text = fbd.SelectedPath;
             };
             page.Controls.AddRange(new Control[] { txtDest, btnDestBrowse });
-            y += 45;
 
-            AddHeader(page, "EXTRACTION MODES", left, y);
-            y += 25;
-            rbModeNormal = CreateRadioButton("Normal Extraction", left, y, true);
-            rbModeList = CreateRadioButton("List Contents (--list)", left + 200, y, false);
-            rbModeListAll = CreateRadioButton("List All (--list-all)", left + 400, y, false);
-            page.Controls.AddRange(new Control[] { rbModeNormal, rbModeList, rbModeListAll });
-            y += 30;
-            rbModeListEntries = CreateRadioButton("List Entries (--list-entries)", left, y, false);
-            rbModeTree = CreateRadioButton("Show Tree (--tree)", left + 200, y, false);
-            page.Controls.AddRange(new Control[] { rbModeListEntries, rbModeTree });
+            // Modes (radio buttons)
             y += 45;
+            AddHeader(page, "MODES", left, y);
+            y += 20;
+            rbModeNormal = CreateRadioButton("Normal", left, y, true);
+            rbModeList = CreateRadioButton("List", left + 100, y, false);
+            rbModeListAll = CreateRadioButton("List All", left + 180, y, false);
+            rbModeListEntries = CreateRadioButton("List Entries", left + 280, y, false);
+            rbModeTree = CreateRadioButton("Tree", left + 400, y, false);
+            page.Controls.AddRange(new Control[] { rbModeNormal, rbModeList, rbModeListAll, rbModeListEntries, rbModeTree });
 
+            // Filtering section
+            y += 35;
             AddHeader(page, "FILTERING", left, y);
-            y += 25;
-
+            y += 22;
             AddLabel(page, "Filter Patterns (-f):", left, y);
-            y += 20;
-            txtFilter = CreateTextBox(left, y, width);
+            txtFilter = CreateTextBox(left, y + 20, width);
             page.Controls.Add(txtFilter);
-            AddLabel(page, "Examples: *volvo*,*scania* | r/\\.pmg$/", left + 5, y + 25, true, 10);
-            y += 55;
+            AddLabel(page, "Examples: *volvo*,*scania* | r/\\.pmg$/", left + 5, y + 45, true, 9);
 
-            AddLabel(page, "Partial Extraction (-p):", left, y);
-            y += 20;
-            txtPartial = CreateTextBox(left, y, width);
+            y += 70;
+            AddLabel(page, "Partial Paths (-p):", left, y);
+            txtPartial = CreateTextBox(left, y + 20, width);
             page.Controls.Add(txtPartial);
-            AddLabel(page, "Examples: /def,/map | /locale", left + 5, y + 25, true, 10);
-            y += 55;
+            AddLabel(page, "Examples: /def,/map | /locale", left + 5, y + 45, true, 9);
 
+            y += 70;
             AddLabel(page, "Paths File (-P):", left, y);
-            y += 20;
-            txtPathsFile = CreateTextBox(left, y, 500);
-            btnPathsBrowse = CreateButton("Browse...", 530, y - 2, 120, 32, ButtonBg);
-            btnPathsBrowse.ForeColor = TextColor;
-            btnPathsBrowse.FlatStyle = FlatStyle.Standard;
-            btnPathsBrowse.Click += (s, e) =>
-            {
+            txtPathsFile = CreateTextBox(left, y + 20, 540);
+            btnPathsBrowse = CreateButton("Browse...", 565, y + 19, 100, 30, ButtonBg);
+            btnPathsBrowse.Click += (s, e) => {
                 using (OpenFileDialog ofd = new OpenFileDialog())
                     if (ofd.ShowDialog() == DialogResult.OK) txtPathsFile!.Text = ofd.FileName;
             };
             page.Controls.AddRange(new Control[] { txtPathsFile, btnPathsBrowse });
-            y += 45;
 
-            chkAll = CreateCheckBox("Extract All Archives in Directory (-a)", left, y);
-            y += 25;
-            chkSeparate = CreateCheckBox("Separate Folders for Multiple Archives (-S)", left, y);
-            y += 25;
-            chkSkip = CreateCheckBox("Skip Existing Files (-s)", left, y);
-            y += 25;
-            chkQuiet = CreateCheckBox("Quiet Mode (-q)", left, y);
-            y += 25;
-            chkDryRun = CreateCheckBox("Dry Run (--dry-run)", left, y);
+            // Basic checkboxes (two rows)
+            y += 55;
+            chkAll = CreateCheckBox("Extract All (-a)", left, y);
+            chkSeparate = CreateCheckBox("Separate Folders (-S)", left + 150, y);
+            chkSkip = CreateCheckBox("Skip Existing (-s)", left + 350, y);
+            page.Controls.AddRange(new Control[] { chkAll, chkSeparate, chkSkip });
 
-            page.Controls.AddRange(new Control[] { chkAll, chkSeparate, chkSkip, chkQuiet, chkDryRun });
+            y += 25;
+            chkQuiet = CreateCheckBox("Quiet (-q)", left, y);
+            chkDryRun = CreateCheckBox("Dry Run (--dry-run)", left + 150, y);
+            page.Controls.AddRange(new Control[] { chkQuiet, chkDryRun });
         }
 
         private void AddAdvancedControls(TabPage page)
         {
-            int left = 20, width = 630, y = 20;
+            int left = 15, width = 665, y = 10;
 
-            AddHeader(page, "ADVANCED OPTIONS", left, y);
-            y += 40;
-            AddLabel(page, "Manual Flags (for unsupported options):", left, y);
+            AddHeader(page, "MANUAL FLAGS", left, y);
             y += 25;
-            txtManual = CreateTextBox(left, y, width);
+            AddLabel(page, "Additional command-line flags (advanced):", left, y);
+            txtManual = CreateTextBox(left, y + 20, width);
             page.Controls.Add(txtManual);
-            y += 45;
 
-            AddHeader(page, "OUTPUT LOG", left, y);
-            y += 30;
+            y += 70;
+            AddHeader(page, "LOG OUTPUT", left, y);
+            y += 25;
             txtLog = new TextBox
             {
                 Location = new Point(left, y),
-                Size = new Size(width, 250),
+                Size = new Size(width, 270),
                 Multiline = true,
                 ReadOnly = true,
                 ScrollBars = ScrollBars.Vertical,
                 BackColor = Color.Black,
-                ForeColor = Color.FromArgb(0, 255, 128),
-                Font = new Font("Cascadia Code", 9),
+                ForeColor = Color.LightGreen,
+                Font = new Font("Consolas", 9),
                 BorderStyle = BorderStyle.FixedSingle
             };
             page.Controls.Add(txtLog);
@@ -218,122 +203,49 @@ namespace ScsExtractorGui
 
         private void AddHashFSControls(TabPage page)
         {
-            int left = 20, width = 630, y = 20;
+            int left = 15, width = 665, y = 10;
 
             AddHeader(page, "HashFS OPTIONS", left, y);
-            y += 40;
-            chkDeep = CreateCheckBox("Deep Mode (--deep) - Scan for referenced paths", left, y);
-            page.Controls.Add(chkDeep);
-            y += 30;
-            chkRaw = CreateCheckBox("Raw Dumps (--raw) - Keep hashed filenames", left, y);
-            page.Controls.Add(chkRaw);
-            y += 40;
+            y += 25;
+            chkDeep = CreateCheckBox("Deep Mode (--deep)", left, y);
+            chkRaw = CreateCheckBox("Raw Dumps (--raw)", left + 200, y);
+            chkTableAtEnd = CreateCheckBox("Table at End (--table-at-end)", left + 400, y);
+            page.Controls.AddRange(new Control[] { chkDeep, chkRaw, chkTableAtEnd });
+
+            y += 35;
             AddLabel(page, "Override Salt (--salt):", left, y);
-            y += 25;
-            txtSalt = CreateTextBox(left, y, 300);
+            txtSalt = CreateTextBox(left, y + 20, 300);
             page.Controls.Add(txtSalt);
-            y += 40;
+
+            y += 60;
             AddLabel(page, "Additional Paths File (--additional):", left, y);
-            y += 25;
-            txtAdditionalFile = CreateTextBox(left, y, 500);
-            btnAdditionalBrowse = CreateButton("Browse...", 530, y - 2, 120, 32, ButtonBg);
-            btnAdditionalBrowse.ForeColor = TextColor;
-            btnAdditionalBrowse.FlatStyle = FlatStyle.Standard;
-            btnAdditionalBrowse.Click += (s, e) =>
-            {
+            txtAdditionalFile = CreateTextBox(left, y + 20, 540);
+            btnAdditionalBrowse = CreateButton("Browse...", 565, y + 19, 100, 30, ButtonBg);
+            btnAdditionalBrowse.Click += (s, e) => {
                 using (OpenFileDialog ofd = new OpenFileDialog())
                     if (ofd.ShowDialog() == DialogResult.OK) txtAdditionalFile!.Text = ofd.FileName;
             };
             page.Controls.AddRange(new Control[] { txtAdditionalFile, btnAdditionalBrowse });
-            y += 45;
-            CheckBox chkTableAtEnd = CreateCheckBox("Table at End (--table-at-end) [v1 only]", left, y);
-            page.Controls.Add(chkTableAtEnd);
-            Label infoLabel = new Label
-            {
-                Text = "Note: HashFS options are for archives using HashFS format.\nUse Deep Mode when archives don't have a top-level directory listing.",
-                Location = new Point(left, y + 40),
-                Size = new Size(width, 60),
-                ForeColor = SecondaryText,
-                Font = new Font("Segoe UI", 9)
-            };
-            page.Controls.Add(infoLabel);
         }
 
-        private void AddHeader(TabPage page, string text, int x, int y)
-        {
-            page.Controls.Add(new Label
-            {
-                Text = text,
-                Location = new Point(x, y),
-                AutoSize = true,
-                ForeColor = SystemColors.Highlight,
-                Font = new Font("Segoe UI", 9, FontStyle.Bold)
-            });
-        }
+        // Helper methods
+        private void AddHeader(TabPage page, string text, int x, int y) =>
+            page.Controls.Add(new Label { Text = text, Location = new Point(x, y), AutoSize = true, ForeColor = Color.DodgerBlue, Font = new Font("Segoe UI", 9, FontStyle.Bold) });
 
-        private void AddLabel(TabPage page, string text, int x, int y, bool small = false, int fontSize = 10)
-        {
-            page.Controls.Add(new Label
-            {
-                Text = text,
-                Location = new Point(x, y),
-                AutoSize = true,
-                ForeColor = small ? SecondaryText : TextColor,
-                Font = new Font("Segoe UI", small ? 8 : fontSize)
-            });
-        }
+        private void AddLabel(TabPage page, string text, int x, int y, bool small = false, int fontSize = 10) =>
+            page.Controls.Add(new Label { Text = text, Location = new Point(x, y), AutoSize = true, ForeColor = small ? SecondaryText : TextColor, Font = new Font("Segoe UI", small ? 8 : fontSize) });
 
-        private TextBox CreateTextBox(int x, int y, int w)
-        {
-            return new TextBox
-            {
-                Location = new Point(x, y),
-                Size = new Size(w, 30),
-                BackColor = ControlBg,
-                ForeColor = TextColor,
-                BorderStyle = BorderStyle.FixedSingle
-            };
-        }
+        private TextBox CreateTextBox(int x, int y, int w) =>
+            new TextBox { Location = new Point(x, y), Size = new Size(w, 25), BackColor = ControlBg, BorderStyle = BorderStyle.FixedSingle };
 
-        private CheckBox CreateCheckBox(string text, int x, int y)
-        {
-            return new CheckBox
-            {
-                Text = text,
-                Location = new Point(x, y),
-                AutoSize = true,
-                FlatStyle = FlatStyle.Standard,
-                ForeColor = TextColor
-            };
-        }
+        private CheckBox CreateCheckBox(string text, int x, int y) =>
+            new CheckBox { Text = text, Location = new Point(x, y), AutoSize = true, ForeColor = TextColor };
 
-        private RadioButton CreateRadioButton(string text, int x, int y, bool checkedState)
-        {
-            return new RadioButton
-            {
-                Text = text,
-                Location = new Point(x, y),
-                AutoSize = true,
-                FlatStyle = FlatStyle.Standard,
-                ForeColor = TextColor,
-                Checked = checkedState
-            };
-        }
+        private RadioButton CreateRadioButton(string text, int x, int y, bool check) =>
+            new RadioButton { Text = text, Location = new Point(x, y), AutoSize = true, Checked = check };
 
-        private Button CreateButton(string text, int x, int y, int w, int h, Color bg)
-        {
-            return new Button
-            {
-                Text = text,
-                Location = new Point(x, y),
-                Size = new Size(w, h),
-                BackColor = bg,
-                FlatStyle = FlatStyle.Standard,
-                ForeColor = TextColor,
-                Cursor = Cursors.Hand,
-                UseVisualStyleBackColor = true
-            };
-        }
+        private Button CreateButton(string text, int x, int y, int w, int h, Color bg) =>
+            new Button { Text = text, Location = new Point(x, y), Size = new Size(w, h), BackColor = bg, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand };
 
         private void Log(string msg)
         {
@@ -343,7 +255,6 @@ namespace ScsExtractorGui
                 return;
             }
             txtLog.AppendText(msg + Environment.NewLine);
-            txtLog.SelectionStart = txtLog.Text.Length;
             txtLog.ScrollToCaret();
         }
 
@@ -351,10 +262,9 @@ namespace ScsExtractorGui
         {
             if (string.IsNullOrEmpty(txtPath?.Text))
             {
-                MessageBox.Show("Please select an input file/folder.", "Missing Input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Please select an input file.", "Input missing", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-
             if (!File.Exists(extractorPath))
             {
                 MessageBox.Show("extractor.exe not found!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -374,16 +284,16 @@ namespace ScsExtractorGui
             btnStart.Enabled = true;
             btnStop.Enabled = false;
             progressBar.Visible = false;
-            Log("\r\n>> Operation Finished.");
+            Log("\r\n>> Operation finished.");
         }
 
         private string BuildArguments()
         {
             string args = $"\"{txtPath!.Text}\"";
-
             if (!string.IsNullOrWhiteSpace(txtDest?.Text) && txtDest.Text != "./extracted")
                 args += $" -d \"{txtDest.Text}\"";
 
+            // Modes
             if (rbModeList!.Checked)
                 args += " --list";
             else if (rbModeListAll!.Checked)
@@ -393,30 +303,31 @@ namespace ScsExtractorGui
             else if (rbModeTree!.Checked)
                 args += " --tree";
 
+            // Basic flags
             if (chkAll!.Checked) args += " -a";
             if (chkSeparate!.Checked) args += " -S";
             if (chkSkip!.Checked) args += " -s";
             if (chkQuiet!.Checked) args += " -q";
             if (chkDryRun!.Checked) args += " --dry-run";
 
+            // Filtering
             if (!string.IsNullOrWhiteSpace(txtFilter?.Text))
                 args += $" -f=\"{txtFilter.Text.Trim()}\"";
-
             if (!string.IsNullOrWhiteSpace(txtPartial?.Text))
                 args += $" -p=\"{txtPartial.Text.Trim()}\"";
-
             if (!string.IsNullOrWhiteSpace(txtPathsFile?.Text) && File.Exists(txtPathsFile.Text))
                 args += $" -P \"{txtPathsFile.Text}\"";
 
+            // HashFS
             if (chkDeep!.Checked) args += " -D";
             if (chkRaw!.Checked) args += " --raw";
-
+            if (chkTableAtEnd!.Checked) args += " --table-at-end";
             if (!string.IsNullOrWhiteSpace(txtSalt?.Text))
                 args += $" --salt={txtSalt.Text.Trim()}";
-
             if (!string.IsNullOrWhiteSpace(txtAdditionalFile?.Text) && File.Exists(txtAdditionalFile.Text))
                 args += $" --additional \"{txtAdditionalFile.Text}\"";
 
+            // Manual flags
             if (!string.IsNullOrWhiteSpace(txtManual?.Text))
                 args += $" {txtManual.Text.Trim()}";
 
@@ -465,14 +376,11 @@ namespace ScsExtractorGui
 
         private void KillProcessTree()
         {
-            if (currentProcess == null || currentProcess.HasExited)
-                return;
-
+            if (currentProcess == null || currentProcess.HasExited) return;
             try
             {
                 currentProcess.Kill();
                 currentProcess.WaitForExit(3000);
-
                 if (!currentProcess.HasExited)
                 {
                     Process.Start(new ProcessStartInfo
@@ -483,7 +391,6 @@ namespace ScsExtractorGui
                         UseShellExecute = false
                     })?.WaitForExit();
                 }
-
                 Log("\r\n[!] PROCESS TERMINATED.");
             }
             catch (Exception ex)
