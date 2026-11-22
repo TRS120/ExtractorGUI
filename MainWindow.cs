@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.UI;
@@ -18,36 +19,21 @@ using WinRT.Interop;
 
 namespace ScsExtractorGui.WinUI3
 {
-    /// <summary>
-    /// Self-contained WinUI 3 window that builds the entire UI programmatically in C#
-    /// while preserving every feature and command-line flag of the original WinForms GUI.
-    /// </summary>
     public sealed partial class MainWindow : Window
     {
-        // Input & Filter Controls
         private TextBox? _txtPath, _txtDest, _txtFilter, _txtPartial, _txtPathsFile;
-
-        // Mode RadioButtons
         private RadioButton? _rbModeNormal, _rbModeList, _rbModeListAll, _rbModeListEntries, _rbModeTree;
-
-        // Basic CheckBoxes
         private CheckBox? _chkAll, _chkSeparate, _chkSkip, _chkQuiet, _chkDryRun;
-
-        // Advanced Controls
         private TextBox? _txtManual, _txtLog;
-
-        // HashFS Controls
         private CheckBox? _chkDeep, _chkRaw, _chkTableAtEnd;
         private TextBox? _txtSalt, _txtAdditionalFile;
-
-        // Action & Status Controls
         private Button? _btnStart, _btnStop;
         private ProgressBar? _progressBar;
         private ScrollViewer? _logScrollViewer;
 
-        // Process & Path State
         private Process? _currentProcess;
         private readonly string _extractorPath = Path.Combine(AppContext.BaseDirectory, "extractor.exe");
+        private bool _checkedMissingExtractorOnActivate;
 
         public MainWindow()
         {
@@ -64,13 +50,18 @@ namespace ScsExtractorGui.WinUI3
 
             Content = BuildRootLayout();
 
-            // Clean up child process tree when the window closes
+            Activated += MainWindow_Activated;
             Closed += (_, _) => KillProcessTree();
+        }
 
-            // Warn if extractor.exe is missing beside the application executable
+        private async void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
+        {
+            if (_checkedMissingExtractorOnActivate) return;
+            _checkedMissingExtractorOnActivate = true;
+
             if (!File.Exists(_extractorPath))
             {
-                _ = ShowDialogAsync(
+                await ShowDialogAsync(
                     "Warning",
                     $"extractor.exe not found at:\n{_extractorPath}\n\nPlease place extractor.exe in the application folder.");
             }
@@ -84,7 +75,6 @@ namespace ScsExtractorGui.WinUI3
 
             appWindow.Resize(new SizeInt32(820, 760));
 
-            // Center window on primary display
             DisplayArea displayArea = DisplayArea.GetFromWindowId(windowId, DisplayAreaFallback.Primary);
             int centerX = (displayArea.WorkArea.Width - 820) / 2;
             int centerY = (displayArea.WorkArea.Height - 760) / 2;
@@ -107,7 +97,6 @@ namespace ScsExtractorGui.WinUI3
             rootGrid.DragOver += RootGrid_DragOver;
             rootGrid.Drop += RootGrid_Drop;
 
-            // Pivot (equivalent to WinForms TabControl)
             Pivot pivot = new Pivot();
             pivot.Items.Add(new PivotItem { Header = "Basic", Content = BuildBasicTab() });
             pivot.Items.Add(new PivotItem { Header = "Advanced", Content = BuildAdvancedTab() });
@@ -116,7 +105,6 @@ namespace ScsExtractorGui.WinUI3
             Grid.SetRow(pivot, 0);
             rootGrid.Children.Add(pivot);
 
-            // Indeterminate Progress Bar
             _progressBar = new ProgressBar
             {
                 IsIndeterminate = true,
@@ -126,7 +114,6 @@ namespace ScsExtractorGui.WinUI3
             Grid.SetRow(_progressBar, 1);
             rootGrid.Children.Add(_progressBar);
 
-            // Start & Stop Action Buttons
             Grid buttonGrid = new Grid
             {
                 ColumnSpacing = 12,
@@ -179,7 +166,6 @@ namespace ScsExtractorGui.WinUI3
 
             StackPanel panel = new StackPanel { Spacing = 14 };
 
-            // INPUT & OUTPUT
             panel.Children.Add(CreateSectionHeader("INPUT & OUTPUT"));
 
             panel.Children.Add(CreateFieldLabel("Target File/Folder (drag & drop):"));
@@ -208,7 +194,6 @@ namespace ScsExtractorGui.WinUI3
             };
             panel.Children.Add(CreateInputWithButton(_txtDest, btnDestBrowse));
 
-            // MODES
             panel.Children.Add(CreateSectionHeader("MODES"));
             StackPanel modesPanel = new StackPanel
             {
@@ -229,7 +214,6 @@ namespace ScsExtractorGui.WinUI3
             modesPanel.Children.Add(_rbModeTree);
             panel.Children.Add(modesPanel);
 
-            // FILTERING
             panel.Children.Add(CreateSectionHeader("FILTERING"));
 
             panel.Children.Add(CreateFieldLabel("Filter Patterns (-f):"));
@@ -255,7 +239,6 @@ namespace ScsExtractorGui.WinUI3
             };
             panel.Children.Add(CreateInputWithButton(_txtPathsFile, btnPathsBrowse));
 
-            // BASIC CHECKBOXES (Two rows)
             StackPanel row1 = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 20 };
             _chkAll = new CheckBox { Content = "Extract All (-a)" };
             _chkSeparate = new CheckBox { Content = "Separate Folders (-S)" };
@@ -372,8 +355,6 @@ namespace ScsExtractorGui.WinUI3
             return panel;
         }
 
-        // --- UI Helpers ---
-
         private static TextBlock CreateSectionHeader(string text) => new TextBlock
         {
             Text = text,
@@ -413,8 +394,6 @@ namespace ScsExtractorGui.WinUI3
             return grid;
         }
 
-        // --- File & Folder Pickers ---
-
         private async Task<string?> PickOpenFileAsync(string[] extensions)
         {
             try
@@ -450,7 +429,19 @@ namespace ScsExtractorGui.WinUI3
                 picker.FileTypeFilter.Add("*");
 
                 StorageFolder? folder = await picker.PickSingleFolderAsync();
-                return folder?.Path;
+                if (!string.IsNullOrEmpty(folder?.Path))
+                {
+                    return folder.Path;
+                }
+            }
+            catch
+            {
+                // Fallback to native Win32 folder dialog when unpackaged FolderPicker throws
+            }
+
+            try
+            {
+                return PickFolderWin32(WindowNative.GetWindowHandle(this));
             }
             catch (Exception ex)
             {
@@ -473,8 +464,6 @@ namespace ScsExtractorGui.WinUI3
             await dialog.ShowAsync();
         }
 
-        // --- Drag & Drop ---
-
         private void RootGrid_DragOver(object sender, DragEventArgs e)
         {
             if (e.DataView.Contains(StandardDataFormats.StorageItems))
@@ -485,17 +474,22 @@ namespace ScsExtractorGui.WinUI3
 
         private async void RootGrid_Drop(object sender, DragEventArgs e)
         {
-            if (!e.DataView.Contains(StandardDataFormats.StorageItems)) return;
-
-            var items = await e.DataView.GetStorageItemsAsync();
-            IStorageItem? firstItem = items.FirstOrDefault();
-            if (firstItem != null && _txtPath != null)
+            try
             {
-                _txtPath.Text = firstItem.Path;
+                if (!e.DataView.Contains(StandardDataFormats.StorageItems)) return;
+
+                var items = await e.DataView.GetStorageItemsAsync();
+                IStorageItem? firstItem = items.FirstOrDefault();
+                if (firstItem != null && _txtPath != null && !string.IsNullOrEmpty(firstItem.Path))
+                {
+                    _txtPath.Text = firstItem.Path;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Drop error: {ex.Message}");
             }
         }
-
-        // --- Logging & Process Execution ---
 
         private void Log(string message)
         {
@@ -551,14 +545,23 @@ namespace ScsExtractorGui.WinUI3
             }
         }
 
+        private static string QuotePath(string rawPath)
+        {
+            string trimmed = rawPath.Trim();
+            if (trimmed.Length > 3)
+            {
+                trimmed = trimmed.TrimEnd('\\', '/');
+            }
+            return $"\"{trimmed}\"";
+        }
+
         private string BuildArguments()
         {
-            string args = $"\"{_txtPath!.Text}\"";
+            string args = QuotePath(_txtPath!.Text);
 
-            if (!string.IsNullOrWhiteSpace(_txtDest?.Text) && _txtDest.Text != "./extracted")
-                args += $" -d \"{_txtDest.Text}\"";
+            if (!string.IsNullOrWhiteSpace(_txtDest?.Text) && _txtDest.Text.Trim() != "./extracted")
+                args += $" -d {QuotePath(_txtDest.Text)}";
 
-            // Modes
             if (_rbModeList?.IsChecked == true)
                 args += " --list";
             else if (_rbModeListAll?.IsChecked == true)
@@ -568,31 +571,27 @@ namespace ScsExtractorGui.WinUI3
             else if (_rbModeTree?.IsChecked == true)
                 args += " --tree";
 
-            // Basic flags
             if (_chkAll?.IsChecked == true) args += " -a";
             if (_chkSeparate?.IsChecked == true) args += " -S";
             if (_chkSkip?.IsChecked == true) args += " -s";
             if (_chkQuiet?.IsChecked == true) args += " -q";
             if (_chkDryRun?.IsChecked == true) args += " --dry-run";
 
-            // Filtering
             if (!string.IsNullOrWhiteSpace(_txtFilter?.Text))
                 args += $" -f=\"{_txtFilter.Text.Trim()}\"";
             if (!string.IsNullOrWhiteSpace(_txtPartial?.Text))
                 args += $" -p=\"{_txtPartial.Text.Trim()}\"";
-            if (!string.IsNullOrWhiteSpace(_txtPathsFile?.Text) && File.Exists(_txtPathsFile.Text))
-                args += $" -P \"{_txtPathsFile.Text}\"";
+            if (!string.IsNullOrWhiteSpace(_txtPathsFile?.Text) && File.Exists(_txtPathsFile.Text.Trim()))
+                args += $" -P {QuotePath(_txtPathsFile.Text)}";
 
-            // HashFS
             if (_chkDeep?.IsChecked == true) args += " -D";
             if (_chkRaw?.IsChecked == true) args += " --raw";
             if (_chkTableAtEnd?.IsChecked == true) args += " --table-at-end";
             if (!string.IsNullOrWhiteSpace(_txtSalt?.Text))
                 args += $" --salt={_txtSalt.Text.Trim()}";
-            if (!string.IsNullOrWhiteSpace(_txtAdditionalFile?.Text) && File.Exists(_txtAdditionalFile.Text))
-                args += $" --additional \"{_txtAdditionalFile.Text}\"";
+            if (!string.IsNullOrWhiteSpace(_txtAdditionalFile?.Text) && File.Exists(_txtAdditionalFile.Text.Trim()))
+                args += $" --additional {QuotePath(_txtAdditionalFile.Text)}";
 
-            // Manual flags
             if (!string.IsNullOrWhiteSpace(_txtManual?.Text))
                 args += $" {_txtManual.Text.Trim()}";
 
@@ -674,6 +673,83 @@ namespace ScsExtractorGui.WinUI3
             {
                 _currentProcess = null;
             }
+        }
+
+        // --- Win32 Folder Picker Fallback ---
+
+        private static string? PickFolderWin32(IntPtr ownerHwnd)
+        {
+            var dialog = (IFileOpenDialog)new FileOpenDialogClass();
+            try
+            {
+                dialog.GetOptions(out uint options);
+                dialog.SetOptions(options | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
+                int hr = dialog.Show(ownerHwnd);
+                if (hr == HRESULT_CANCELLED) return null;
+                Marshal.ThrowExceptionForHR(hr);
+
+                dialog.GetResult(out IShellItem item);
+                item.GetDisplayName(SIGDN_FILESYSPATH, out string path);
+                return path;
+            }
+            finally
+            {
+                Marshal.ReleaseComObject(dialog);
+            }
+        }
+
+        private const uint FOS_PICKFOLDERS = 0x00000020;
+        private const uint FOS_FORCEFILESYSTEM = 0x00000040;
+        private const uint SIGDN_FILESYSPATH = 0x80058000;
+        private const int HRESULT_CANCELLED = unchecked((int)0x800704C7);
+
+        [ComImport]
+        [Guid("DC1C5A9C-E88A-4dde-A5A1-60F82A20AEF7")]
+        private class FileOpenDialogClass { }
+
+        [ComImport]
+        [Guid("42f85136-db7e-439c-85f1-e4075d135fc8")]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface IFileOpenDialog
+        {
+            [PreserveSig] int Show([In] IntPtr parent);
+            void SetFileTypes([In] uint cFileTypes, [In] IntPtr rgFilterSpec);
+            void SetFileTypeIndex([In] uint iFileType);
+            void GetFileTypeIndex(out uint piFileType);
+            void Advise([In] IntPtr pfde, out uint pdwCookie);
+            void Unadvise([In] uint dwCookie);
+            void SetOptions([In] uint fos);
+            void GetOptions(out uint pfos);
+            void SetDefaultFolder([In] IShellItem psi);
+            void SetFolder([In] IShellItem psi);
+            void GetFolder(out IShellItem ppsi);
+            void GetCurrentSelection(out IShellItem ppsi);
+            void SetFileName([In, MarshalAs(UnmanagedType.LPWStr)] string pszName);
+            void GetFileName([MarshalAs(UnmanagedType.LPWStr)] out string pszName);
+            void SetTitle([In, MarshalAs(UnmanagedType.LPWStr)] string pszTitle);
+            void SetOkButtonLabel([In, MarshalAs(UnmanagedType.LPWStr)] string pszText);
+            void SetFileNameLabel([In, MarshalAs(UnmanagedType.LPWStr)] string pszLabel);
+            void GetResult(out IShellItem ppsi);
+            void AddPlace([In] IShellItem psi, int fdcp);
+            void SetDefaultExtension([In, MarshalAs(UnmanagedType.LPWStr)] string pszDefaultExtension);
+            void Close([MarshalAs(UnmanagedType.Error)] int hr);
+            void SetClientGuid([In] ref Guid guid);
+            void ClearClientData();
+            void SetFilter([In] IntPtr pFilter);
+            void GetResults(out IntPtr ppenum);
+            void GetSelectedItems(out IntPtr ppsai);
+        }
+
+        [ComImport]
+        [Guid("43826d1e-e718-42ee-bc55-a1e261c37bfe")]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface IShellItem
+        {
+            void BindToHandler([In] IntPtr pbc, [In] ref Guid bhid, [In] ref Guid riid, out IntPtr ppv);
+            void GetParent(out IShellItem ppsi);
+            void GetDisplayName([In] uint sigdnName, [MarshalAs(UnmanagedType.LPWStr)] out string ppszName);
+            void GetAttributes([In] uint sfgaoMask, out uint psfgaoAttribs);
+            void Compare([In] IShellItem psi, [In] uint hint, out int piOrder);
         }
     }
 }
