@@ -94,7 +94,6 @@ namespace ScsExtractorGui
 
         public App()
         {
-            this.InitializeComponent();
             this.UnhandledException += App_UnhandledException;
         }
 
