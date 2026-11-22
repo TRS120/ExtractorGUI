@@ -20,7 +20,7 @@ jobs:
         run: dotnet publish ExtractorGui.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true /p:DebugType=None /p:DebugSymbols=false -o ./GUI_Output
 
       - name: Upload GUI Artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ExtractorGui-Win64
           path: ./GUI_Output/
