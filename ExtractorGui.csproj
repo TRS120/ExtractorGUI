@@ -1,18 +1,24 @@
-<!-- Enable WinUI 3 and unpackaged desktop execution -->
-<UseWinUI>true</UseWinUI>
-<WindowsPackageType>None</WindowsPackageType>
-<EnableMsixTooling>false</EnableMsixTooling>
-<WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
+<Project Sdk="Microsoft.NET.Sdk">
 
-<!-- Language & nullable settings -->
-<Nullable>enable</Nullable>
-<ImplicitUsings>enable</ImplicitUsings>
-<Platforms>x64</Platforms>
-<RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
-<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <UseWinUI>true</UseWinUI>
+    <WindowsPackageType>None</WindowsPackageType>
+    <EnableMsixTooling>false</EnableMsixTooling>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <SelfContained>false</SelfContained>
+  </PropertyGroup>
 
-<!-- Single-file publish settings for CI/CD -->
-<PublishSingleFile>true</PublishSingleFile>
-<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-<DebugType>None</DebugType>
-<DebugSymbols>false</DebugSymbols>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.240923002" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
+  </ItemGroup>
+
+</Project>
