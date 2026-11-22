@@ -72,14 +72,19 @@ namespace ScsExtractorGui
         {
             try
             {
+                string exText = ex != null ? ex.ToString() : "No exception object.";
+                string divider = new string('-', 60);
                 string entry =
                     $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{source}]{Environment.NewLine}" +
-                    (ex != null ? ex.ToString() : "No exception object.") +
-                    $"{Environment.NewLine}{new string('-', 60)}{Environment.NewLine}";
+                    $"{exText}{Environment.NewLine}" +
+                    $"{divider}{Environment.NewLine}";
 
                 File.AppendAllText(CrashLogPath, entry);
             }
             catch
+            {
+                // Ignore logging errors during shutdown/crash
+            }
         }
     }
 
