@@ -1,11 +1,18 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net9.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
-    <UseWindowsForms>true</UseWindowsForms>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <PlatformTarget>x64</PlatformTarget>
-    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
-  </PropertyGroup>
-</Project>
+<!-- Enable WinUI 3 and unpackaged desktop execution -->
+<UseWinUI>true</UseWinUI>
+<WindowsPackageType>None</WindowsPackageType>
+<EnableMsixTooling>false</EnableMsixTooling>
+<WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
+
+<!-- Language & nullable settings -->
+<Nullable>enable</Nullable>
+<ImplicitUsings>enable</ImplicitUsings>
+<Platforms>x64</Platforms>
+<RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+
+<!-- Single-file publish settings for CI/CD -->
+<PublishSingleFile>true</PublishSingleFile>
+<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+<DebugType>None</DebugType>
+<DebugSymbols>false</DebugSymbols>
